@@ -14,7 +14,7 @@ export async function testOpenAI() {
       model: "gpt-4o-mini",
       messages: [
         { role: "system", content: "You are a helpful assistant." },
-        { role: "user", content: "Write me a gay bed time story about sri and sammy, they are best friends and they are going to sleep together." }
+        { role: "user", content: "Make a funny joke about khoi and diem" }
       ],
     });
 
