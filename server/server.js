@@ -3,12 +3,9 @@ dotenv.config();
 import express from "express";
 import cors from "cors";
 import multer from "multer";
-import { authMiddleware } from "./middleware/auth.js";
 import authRoutes from "./routes/auth.js";
-import parseRoutes from "./routes/parse.js";
-import sheetsRoutes from "./routes/sheets.js";
-import uploadRoutes from "./routes/upload.js";
-import { testOpenAI } from "./utils/openai.js";
+import { testOpenAI } from "./services/openai.js";
+import tokensRoutes from "./routes/tokens.js";
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -20,10 +17,7 @@ app.use(express.urlencoded({ extended: true })); // parse URL-encoded requests
 
 // mounting routes
 app.use("/api", authRoutes);
-//app.use("/api/parse", authMiddleware, parseRoutes);
-//app.use("/api/sheets", authMiddleware, sheetsRoutes);
-//app.use("/api/upload", authMiddleware, uploadRoutes);
-
+app.use("/tokens", tokensRoutes);
 
 
 

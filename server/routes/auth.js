@@ -1,5 +1,5 @@
 import express from "express";
-import { oauth2Client, getAuthURL } from "../utils/google.js";
+import { oauth2Client, getAuthURL } from "../services/google.js";
 
 const router = express.Router();
 
@@ -8,7 +8,7 @@ router.get("/auth/google", (req, res) => {
   res.redirect(getAuthURL());
 });
 
-// Step 2: Handle Google callback
+// Step 2: Handle Google callback and exchange code for tokens
 router.get("/auth/google/callback", (req, res) => {
   const authCode = req.query.code;
 
@@ -21,7 +21,7 @@ router.get("/auth/google/callback", (req, res) => {
     .then(({ tokens }) => {
       oauth2Client.setCredentials(tokens);
 
-      // response to the client
+      // Response to the client
       return res.json({
         message: "Google login successful!",
         googleTokens: tokens,

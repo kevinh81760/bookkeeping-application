@@ -14,7 +14,7 @@ export async function testOpenAI() {
       model: "gpt-4o-mini",
       messages: [
         { role: "system", content: "You are a helpful assistant." },
-        { role: "user", content: "Make a funny joke about khoi and diem" }
+        { role: "user", content: "Say hello to me" }
       ],
     });
 
@@ -22,7 +22,7 @@ export async function testOpenAI() {
 
     return response.choices[0].message.content;
   } catch (error) {
-    console.error("❌ OpenAI Error:", error);
+    console.error("OpenAI Error:", error);
     throw error;
   }
 }

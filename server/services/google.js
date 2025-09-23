@@ -14,6 +14,7 @@ export const oauth2Client = new google.auth.OAuth2(
 
 export const getAuthURL = () => {
   const scopes = [
+    "openid",
     "https://www.googleapis.com/auth/userinfo.profile",
     "https://www.googleapis.com/auth/userinfo.email"
   ];
