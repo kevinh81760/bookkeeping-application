@@ -4,8 +4,8 @@ dotenv.config();
 import express from "express";
 import cors from "cors";
 
-import authRoutes from "./routes/auth.js";
-import uploadRoutes from "./routes/upload.js";
+import authRoutes from "./routes/authRoutes.js";
+import uploadRoutes from "./routes/uploadRoutes.js";
 
 const app = express();
 const PORT = process.env.PORT || 4000;
