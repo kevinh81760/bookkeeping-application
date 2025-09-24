@@ -4,8 +4,11 @@ dotenv.config();
 import express from "express";
 import cors from "cors";
 
+import { authMiddleware } from "./middleware/authMiddleware.js";
 import authRoutes from "./routes/authRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
+import foldersRoutes from "./routes/foldersRoutes.js";
+
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -17,7 +20,8 @@ app.use(express.urlencoded({ extended: true })); // parse form/urlencoded reques
 
 // Step 2: Routes
 app.use("/api", authRoutes);            // auth routes (Google OAuth)
-app.use("/upload", uploadRoutes);       // file upload routes
+app.use("/upload", authMiddleware, uploadRoutes);       // file upload routes
+app.use("/folders", authMiddleware, foldersRoutes);       // folders routes
 
 // Step 3: Health check route
 app.get("/", (req, res) => {
