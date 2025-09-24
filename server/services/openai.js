@@ -2,12 +2,12 @@ import OpenAI from "openai";
 import dotenv from "dotenv";
 dotenv.config();
 
-// create OpenAI client with API key from .env
+// Step 1: Create OpenAI client with API key from .env
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// helper function (example: test call)
+// Step 2: Example helper function (test call to OpenAI)
 export async function testOpenAI() {
   try {
     const response = await client.chat.completions.create({
@@ -19,7 +19,6 @@ export async function testOpenAI() {
     });
 
     console.log(response.choices[0].message.content);
-
     return response.choices[0].message.content;
   } catch (error) {
     console.error("OpenAI Error:", error);
@@ -27,5 +26,5 @@ export async function testOpenAI() {
   }
 }
 
-// export raw client in case you need custom calls
+// Step 3: Export raw client in case you need custom calls
 export { client };

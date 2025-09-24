@@ -14,7 +14,7 @@ router.post("/", upload.single("file"), async (req, res) => {
 
     res.json({
       success: true,
-      message: `✅ Uploaded ${file.originalname} to S3!`,
+      message: `Uploaded ${file.originalname} to S3!`,
       location: s3Path
     });
 
