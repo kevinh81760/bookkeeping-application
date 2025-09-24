@@ -15,7 +15,7 @@ const client = new DynamoDBClient({
 // Step 2: Wrap client with DocumentClient (auto JSON marshalling)
 export const db = DynamoDBDocumentClient.from(client);
 
-// Step 3: Save or update refresh token in Tokens table
+
 export async function saveRefreshTokenForUser(userId, refreshToken) {
   const params = {
     TableName: process.env.DYNAMO_TOKENS_TABLE,
@@ -30,7 +30,7 @@ export async function saveRefreshTokenForUser(userId, refreshToken) {
   return params.Item;
 }
 
-// Step 4: Get refresh token for a user
+
 export async function getRefreshTokenForUser(userId) {
   const params = {
     TableName: process.env.DYNAMO_TOKENS_TABLE,
@@ -40,7 +40,7 @@ export async function getRefreshTokenForUser(userId) {
   return result.Item ? result.Item.refresh_token : null;
 }
 
-// Step 5: Delete refresh token for a user
+
 export async function deleteRefreshTokenForUser(userId) {
   const params = {
     TableName: process.env.DYNAMO_TOKENS_TABLE,
@@ -49,7 +49,7 @@ export async function deleteRefreshTokenForUser(userId) {
   await db.send(new DeleteCommand(params));
 }
 
-// Step 6: Save or update user in Users table
+
 export async function saveUser(profile) {
   const params = {
     TableName: process.env.DYNAMO_USERS_TABLE,
@@ -63,4 +63,22 @@ export async function saveUser(profile) {
   };
   await db.send(new PutCommand(params));
   return params.Item;
+}
+
+export async function saveReceipt(userId, fileName, s3Path) {
+  const receiptRecord = {
+    userId,
+    receiptId: uuidv4(),
+    imageUri: s3Path,
+    fileName,
+    createdAt: new Date().toISOString(),
+  };
+
+  const params = {
+    TableName: process.env.DYNAMO_RECEIPTS_TABLE,
+    Item: receiptRecord,
+  };
+
+  await db.send(new PutCommand(params));
+  return receiptRecord;
 }

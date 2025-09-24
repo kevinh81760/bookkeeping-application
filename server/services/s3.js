@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+// Step 1: Create an S3 client
 const s3 = new S3Client({
   region: process.env.AWS_REGION,
   credentials: {
@@ -11,16 +12,22 @@ const s3 = new S3Client({
   },
 });
 
+// Step 2: Upload file helper
 export const uploadToS3 = async (fileBuffer, fileName, mimeType) => {
+  // Step 2a: Create a unique key (S3 object path)
+  const key = `receipts/${Date.now()}-${fileName}`;
+
+  // Step 2b: Build the PutObject command
   const command = new PutObjectCommand({
     Bucket: process.env.AWS_BUCKET_NAME,
-    // key format: receipts/YYYY-MM-DD/HH-MM-SS-filename.extension
-    Key: `receipts/${Date.now()}-${fileName}`,
+    Key: key,
     Body: fileBuffer,
     ContentType: mimeType,
   });
 
+  // Step 2c: Send the command to S3 (this uploads the file)
   await s3.send(command);
 
-  return `s3://${process.env.AWS_BUCKET_NAME}/receipts/${fileName}`;
+  // Step 2d: Return internal S3 URI (safe to store in DynamoDB)
+  return `s3://${process.env.AWS_BUCKET_NAME}/${key}`;
 };
