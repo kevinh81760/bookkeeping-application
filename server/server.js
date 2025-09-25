@@ -1,13 +1,11 @@
 import dotenv from "dotenv";
 dotenv.config();
-
 import express from "express";
 import cors from "cors";
-
-import { authMiddleware } from "./middleware/authMiddleware.js";
-import authRoutes from "./routes/authRoutes.js";
-import uploadRoutes from "./routes/uploadRoutes.js";
-import foldersRoutes from "./routes/foldersRoutes.js";
+import authRoutes from "./01-routes/authRoutes.js";
+import uploadRoutes from "./01-routes/uploadRoutes.js";
+import foldersRoutes from "./01-routes/foldersRoutes.js";
+import { authMiddleware } from "./04-middleware/authMiddleware.js";
 
 
 const app = express();

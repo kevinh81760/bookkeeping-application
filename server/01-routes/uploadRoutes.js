@@ -1,28 +1,23 @@
 import express from "express";
 import multer from "multer";
-import { uploadToS3 } from "../services/s3.js"; 
-import { saveReceipt } from "../services/dynamo.js";
+import { uploadToS3 } from "../03-services/s3.js"; 
+import { saveReceipt } from "../03-services/dynamo.js";
 
 const router = express.Router();
-
-// Step 1: Configure multer to store files in memory
 const upload = multer({ storage: multer.memoryStorage() });
 
 
 router.post("/single", upload.single("file"), async (req, res) => {
   try {
-    // Step 2: Get uploaded file + userId
+
     const file = req.file;
     const userId = req.body.userId; // client must send this
     if (!file) return res.status(400).json({ error: "No file uploaded" });
 
-    // Step 3: Upload file buffer to S3
     const s3Path = await uploadToS3(file.buffer, file.originalname, file.mimetype);
 
-    // Step 4: Save record in DynamoDB
     const receiptRecord = await saveReceipt(userId, file.originalname, s3Path);
 
-    // Step 5: Send back success response
     res.json({
       success: true,
       message: `Uploaded ${file.originalname} to S3 and saved in DB!`,

@@ -1,7 +1,7 @@
 import express from "express";
-import { exchangeCodeForTokens, getAuthURL } from "../services/google.js";
+import { exchangeCodeForTokens, getAuthURL } from "../03-services/google.js";
 import jwt from "jsonwebtoken";
-import { saveUser, saveRefreshTokenForUser } from "../services/dynamo.js";
+import { saveUser, saveRefreshTokenForUser } from "../03-services/dynamo.js";
 
 const router = express.Router();
 

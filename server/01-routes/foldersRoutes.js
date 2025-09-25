@@ -1,6 +1,6 @@
 import express from "express";
 import { v4 as uuidv4 } from "uuid";
-import { db } from "../services/dynamo.js";
+import { db } from "../03-services/dynamo.js";
 import { PutCommand } from "@aws-sdk/lib-dynamodb";
 
 const router = express.Router();
