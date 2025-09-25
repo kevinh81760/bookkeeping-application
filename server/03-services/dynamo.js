@@ -1,8 +1,8 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, PutCommand, GetCommand, DeleteCommand } from "@aws-sdk/lib-dynamodb";
-import { v4 as uuidv4 } from "uuid";
+import { DynamoDBDocumentClient, PutCommand, GetCommand, DeleteCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import dotenv from "dotenv";
 dotenv.config();
+import { randomUUID } from "crypto";
 
 // Step 1: Create DynamoDB client
 const client = new DynamoDBClient({
@@ -66,20 +66,31 @@ export async function saveUser(profile) {
   return params.Item;
 }
 
-export async function saveReceipt(userId, fileName, s3Path) {
+
+export async function getFolderColumns(folderId) {
+  const result = await db.send(new GetCommand({
+    TableName: process.env.DYNAMO_FOLDERS_TABLE,
+    Key: { folderId },
+  }));
+  return result.Item?.columns ?? [];
+}
+
+
+export async function saveReceipt(userId, folderId, fileName, s3Path, receiptData) {
   const receiptRecord = {
+    receiptId: randomUUID(),
     userId,
-    receiptId: uuidv4(),
-    imageUri: s3Path,
+    folderId,
     fileName,
+    imageUri: s3Path,
     createdAt: new Date().toISOString(),
+    receiptData, // now includes GPT output directly
   };
 
-  const params = {
+  await db.send(new PutCommand({
     TableName: process.env.DYNAMO_RECEIPTS_TABLE,
     Item: receiptRecord,
-  };
+  }));
 
-  await db.send(new PutCommand(params));
   return receiptRecord;
 }

@@ -1,4 +1,5 @@
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -31,3 +32,16 @@ export const uploadToS3 = async (fileBuffer, fileName, mimeType) => {
   // Step 2d: Return internal S3 URI (safe to store in DynamoDB)
   return `s3://${process.env.AWS_BUCKET_NAME}/${key}`;
 };
+
+// Step 3: Signed URL helper
+export const getSignedS3Url = async (s3Uri, expiresIn = 3600) => {
+  if (!s3Uri.startsWith("s3://")) throw new Error("Invalid S3 URI");
+
+  const withoutPrefix = s3Uri.replace("s3://", "");
+  const [bucket, ...keyParts] = withoutPrefix.split("/");
+  const key = keyParts.join("/");
+
+  const command = new GetObjectCommand({ Bucket: bucket, Key: key });
+  return await getSignedUrl(s3, command, { expiresIn });
+};
+

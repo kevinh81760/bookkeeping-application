@@ -7,24 +7,40 @@ const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Step 2: Example helper function (test call to OpenAI)
-export async function testOpenAI() {
-  try {
-    const response = await client.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: "You are a helpful assistant." },
-        { role: "user", content: "Say hello to me" }
-      ],
-    });
 
-    console.log(response.choices[0].message.content);
-    return response.choices[0].message.content;
-  } catch (error) {
-    console.error("OpenAI Error:", error);
-    throw error;
+// Step 2: Analyze a receipt
+export async function analyzeReceipt(signedUrl, columns) {
+  // Generate signed URL from the s3:// URI
+
+  // Ask GPT to parse the receipt with your dynamic columns
+  const response = await client.chat.completions.create({
+    model: "gpt-4o-mini", // vision-capable
+    messages: [
+      {
+        role: "system",
+        content: `You are a bookkeeping assistant. 
+                  Extract the following categories: ${columns.join(", ")}. 
+                  Return ONLY valid JSON, no explanations.`
+      },
+      {
+        role: "user",
+        content: [
+          { type: "text", text: "Here is a receipt. Parse it into the given JSON format. Without any explanations." },
+          { type: "image_url", image_url: { url: signedUrl } }
+        ]
+      }
+    ]
+  });
+
+  const raw = response.choices[0].message.content;
+
+  try {
+    return raw;
+  } catch (err) {
+    console.error("Invalid JSON from GPT:", raw);
+    throw new Error("GPT did not return valid JSON");
   }
 }
 
-// Step 3: Export raw client in case you need custom calls
+// Step 3: Export client for custom calls
 export { client };
