@@ -34,14 +34,12 @@ export const uploadToS3 = async (fileBuffer, fileName, mimeType) => {
 };
 
 // Step 3: Signed URL helper
-export const getSignedS3Url = async (s3Uri, expiresIn = 3600) => {
-  if (!s3Uri.startsWith("s3://")) throw new Error("Invalid S3 URI");
+export const getSignedS3Url = async (key, expiresIn = 3600) => {
+  const command = new GetObjectCommand({
+    Bucket: process.env.AWS_BUCKET_NAME,
+    Key: key,
+  });
 
-  const withoutPrefix = s3Uri.replace("s3://", "");
-  const [bucket, ...keyParts] = withoutPrefix.split("/");
-  const key = keyParts.join("/");
-
-  const command = new GetObjectCommand({ Bucket: bucket, Key: key });
   return await getSignedUrl(s3, command, { expiresIn });
 };
 

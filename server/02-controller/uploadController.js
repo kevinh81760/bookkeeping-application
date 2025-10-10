@@ -13,20 +13,23 @@ export async function uploadSingle(req, res) {
   
       // Upload to S3
       const s3Path = await uploadToS3(file.buffer, file.originalname, file.mimetype);
-  
+
+      // Generate signed URL
+      const signedUrl = await getSignedS3Url(s3Path);
+      console.log("Signed URL:", signedUrl);
+
       // Get folder columns
       const columns = await getFolderColumns(folderId);
       if (!columns.length) {
         return res.status(404).json({ error: "No columns found for this folder" });
       }
-  
-      // Generate signed URL
-      const signedUrl = await getSignedS3Url(s3Path);
-      console.log("Signed URL:", signedUrl);
+
+
   
       // Analyze receipt
-      //const receiptJson = await analyzeReceipt(signedUrl, columns);
-  
+      const receiptJson = await analyzeReceipt(signedUrl, columns, categories);
+      console.log("Receipt JSON:", receiptJson);
+
       // Save everything in Dynamo (metadata + GPT JSON together)
       // const savedReceipt = await saveReceipt(userId, folderId, file.originalname, s3Path, receiptJson);
   
