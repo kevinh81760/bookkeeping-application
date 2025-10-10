@@ -19,7 +19,7 @@ app.use(express.urlencoded({ extended: true })); // parse form/urlencoded reques
 
 // Step 2: Routes
 app.use("/api", authRoutes);            // auth routes (Google OAuth)
-app.use("/folders", authMiddleware, foldersRoutes);       // folders routes
+app.use("/folders", foldersRoutes);       // folders routes
 app.use("/upload", uploadRoutes);       // file upload routes
 
 // Step 3: Health check route

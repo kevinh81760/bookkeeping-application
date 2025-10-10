@@ -3,74 +3,70 @@ import { saveReceipt, getFolderColumns } from "../03-services/dynamo.js";
 import { analyzeReceipt } from "../03-services/openai.js";
 
 export async function uploadSingle(req, res) {
-    try {
-      const file = req.file;
-      const { userId, folderId } = req.body;
-  
-      if (!file) {
-        return res.status(400).json({ error: "No file uploaded" });
-      }
-  
-      // Upload to S3
-      const s3Path = await uploadToS3(file.buffer, file.originalname, file.mimetype);
-
-      // Generate signed URL
-      const signedUrl = await getSignedS3Url(s3Path);
-      console.log("Signed URL:", signedUrl);
-
-      // Get folder columns
-      const columns = await getFolderColumns(folderId);
-      if (!columns.length) {
-        return res.status(404).json({ error: "No columns found for this folder" });
-      }
-
-
-  
-      // Analyze receipt
-      const receiptJson = await analyzeReceipt(signedUrl, columns, categories);
-      console.log("Receipt JSON:", receiptJson);
-
-      // Save everything in Dynamo (metadata + GPT JSON together)
-      // const savedReceipt = await saveReceipt(userId, folderId, file.originalname, s3Path, receiptJson);
-  
-      res.json({
-        success: true,
-        message: `Uploaded ${file.originalname} to S3 and saved in DB!`,
-      });
-    } catch (err) {
-      console.error("S3 Single Upload Error:", err);
-      res.status(500).json({ error: "Upload failed", details: err.message });
-    }
-  }
-  
-  
-// Handle batch upload
-export async function uploadBatch(req, res) {
   try {
-    const files = req.files;
-    const userId = req.body.userId;
+    const file = req.file;
+    const { userId, folderId } = req.body;
 
-    if (!files || files.length === 0) {
-      return res.status(400).json({ error: "No files uploaded" });
+    // Validate file input
+    if (!file) {
+      return res.status(400).json({ error: "No file uploaded" });
     }
 
-    // Upload all files to S3 + save in DynamoDB
-    const uploadTasks = files.map(async (file) => {
-      const s3Path = await uploadToS3(file.buffer, file.originalname, file.mimetype);
-      return await saveReceipt(userId, file.originalname, s3Path);
-    });
+    if (!userId || !folderId) {
+      return res.status(400).json({ error: "Missing userId or folderId in request" });
+    }
 
-    const receipts = await Promise.all(uploadTasks);
+    // Upload file to S3
+    const s3Path = await uploadToS3(file.buffer, file.originalname, file.mimetype);
+    console.log("Uploaded to S3:", s3Path);
+
+    // Generate signed URL for AI analysis
+    const signedUrl = await getSignedS3Url(s3Path);
+    console.log("Signed URL:", signedUrl);
+
+    // Fetch folder info (columns + categories)
+    const folderData = await getFolderColumns(folderId, userId);
+
+    if (!folderData) {
+      return res.status(404).json({ error: "Folder not found" });
+    }
+
+    const columns = folderData.columns || [];
+    const categories = folderData.categories || [];
+
+    if (columns.length === 0) {
+      return res.status(404).json({ error: "No columns found for this folder" });
+    }
+
+    // Analyze receipt with GPT
+    const receiptJson = await analyzeReceipt(signedUrl, columns, categories);
+    console.log("Receipt JSON:", receiptJson);
+
+    // Save to DynamoDB (don’t redeclare with const)
+    const savedReceipt = await saveReceipt(
+      userId,
+      folderId,
+      file.originalname,
+      s3Path,
+      receiptJson
+    );
+
+    console.log("Saved receipt:", savedReceipt);
 
     res.json({
       success: true,
-      message: `Uploaded ${receipts.length} files to S3 and saved in DB!`,
-      receipts,
+      message: `Uploaded ${file.originalname} to S3 and processed successfully!`,
+      folderId,
+      userId,
+      columns,
+      categories,
+      savedReceipt,
     });
-
-    console.log(`Saved ${receipts.length} receipts`);
   } catch (err) {
-    console.error("S3 Batch Upload Error:", err);
-    res.status(500).json({ error: "Batch upload failed" });
+    console.error("S3 Single Upload Error:", err);
+    res.status(500).json({
+      error: "Upload failed",
+      details: err.message,
+    });
   }
 }

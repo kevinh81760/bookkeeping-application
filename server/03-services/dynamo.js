@@ -67,13 +67,22 @@ export async function saveUser(profile) {
 }
 
 
-export async function getFolderColumns(folderId) {
-  const result = await db.send(new GetCommand({
+export async function getFolderColumns(folderId, userId) {
+  const params = {
     TableName: process.env.DYNAMO_FOLDERS_TABLE,
-    Key: { folderId },
-  }));
-  return result.Item?.columns ?? [];
+    Key: { userId, folderId },
+  };
+
+  const result = await db.send(new GetCommand(params));
+
+  if (!result.Item) return null;
+
+  return {
+    columns: result.Item.columns || [],
+    categories: result.Item.categories || [],
+  };
 }
+
 
 
 export async function saveReceipt(userId, folderId, fileName, s3Path, receiptData) {

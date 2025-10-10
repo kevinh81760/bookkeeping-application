@@ -4,6 +4,6 @@ import { createFolder } from "../02-controller/folderController.js";
 
 const router = express.Router();
 
-router.post("/", createFolder);
+router.post("/create", createFolder);
 
 export default router;
