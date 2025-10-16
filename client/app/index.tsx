@@ -1,31 +1,100 @@
-import React from "react";
-import { View, Text, TouchableOpacity } from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import React, { useState, useRef } from "react";
+import { View, Text, TouchableOpacity, FlatList, Dimensions } from "react-native";
+import { useRouter } from "expo-router";
 
-export default function Screen() {
-  const navigation = useNavigation();
-  const insets = useSafeAreaInsets();
+const { width } = Dimensions.get("window");
+
+const slides = [
+  {
+    title: "SNAP RECEIPTS",
+    subtitle: "Fast capture with edge auto-detect.",
+    emoji: "📷",
+  },
+  {
+    title: "ORGANIZE AUTOMATICALLY",
+    subtitle: "We file by month and vendor for you.",
+    emoji: "🗂️",
+  },
+  {
+    title: "READY FOR BOOKKEEPING",
+    subtitle: "Review totals and export when you're done.",
+    emoji: "📄",
+  },
+];
+
+export default function Onboarding() {
+  const [index, setIndex] = useState(0);
+  const flatListRef = useRef<FlatList>(null);
+  const router = useRouter();
+
+  const handleNext = () => {
+    if (index < slides.length - 1) {
+      flatListRef.current?.scrollToIndex({ index: index + 1 });
+    } else {
+      router.push("/paywall"); // opens modal
+    }
+  };
 
   return (
-    <View
-      className="flex-1 items-center justify-center bg-white"
-      style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
-    >
-      <Text className="text-3xl font-bold text-blue-600 mb-6">
-        Layang Bookkeeping 📘
-      </Text>
-
-      <Text className="text-gray-600 mb-4 text-center">
-        Simple test screen with Tailwind + NativeWindddddddd
-      </Text>
-
-      <TouchableOpacity
-        className="bg-blue-500 px-6 py-3 rounded-xl active:opacity-80"
-        onPress={() => navigation.navigate("next" as never)}
-      >
-        <Text className="text-white font-semibold text-lg">Next Screen →</Text>
+    <View className="flex-1 bg-white">
+      {/* Skip */}
+      <TouchableOpacity className="absolute top-16 right-6 z-10">
+        <Text className="text-[#D75C3E] font-semibold">SKIP</Text>
       </TouchableOpacity>
+
+      {/* Slides */}
+      <FlatList
+        ref={flatListRef}
+        data={slides}
+        keyExtractor={(item) => item.title}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onMomentumScrollEnd={(e) => {
+          const newIndex = Math.round(e.nativeEvent.contentOffset.x / width);
+          setIndex(newIndex);
+        }}
+        renderItem={({ item }) => (
+          <View
+            style={{ width }}
+            className="flex-1 items-center justify-center"
+          >
+            <View className="w-24 h-24 border-2 border-gray-300 rounded-2xl items-center justify-center">
+              <Text className="text-4xl">{item.emoji}</Text>
+            </View>
+            <Text className="text-xl font-extrabold mt-10 text-black">
+              {item.title}
+            </Text>
+            <Text className="text-gray-500 mt-2 text-center">
+              {item.subtitle}
+            </Text>
+          </View>
+        )}
+      />
+
+      {/* Dots */}
+      <View className="flex-row justify-center items-center mb-6">
+        {slides.map((_, i) => (
+          <View
+            key={i}
+            className={`w-2.5 h-2.5 rounded-full mx-1 ${
+              i === index ? "bg-[#D75C3E]" : "bg-gray-300"
+            }`}
+          />
+        ))}
+      </View>
+
+      {/* Next / Get Started */}
+      <View className="items-center mb-10">
+        <TouchableOpacity
+          onPress={handleNext}
+          className="bg-[#D75C3E] w-[85%] py-4 rounded-2xl active:opacity-80"
+        >
+          <Text className="text-white font-semibold text-lg text-center">
+            {index === slides.length - 1 ? "Get started" : "Next"}
+          </Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
