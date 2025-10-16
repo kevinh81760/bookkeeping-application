@@ -1,56 +1,60 @@
 # ----------------------
-# Node.js / NPM
+# Node / NPM
 # ----------------------
-node_modules
+node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 package-lock.json
+pnpm-lock.yaml
 
 # ----------------------
-# Expo / React Native (client)
+# Expo / React Native (Client)
 # ----------------------
-.expo
-.expo-shared
+client/.expo/
+client/.expo-shared/
+client/dist/
+client/web-build/
+client/*.bundle
+client/*.map
+client/*.packager-info.json
+client/metro-cache/
+client/.vscode/
+
+# Android
+client/android/.gradle/
+client/android/app/build/
+client/android/local.properties
+
+# iOS
+client/ios/Pods/
+client/ios/build/
+client/ios/*.xcworkspace
+client/ios/*.xcuserstate
+client/ios/.DS_Store
+
+# Keys & Certificates
 *.jks
 *.p8
 *.p12
 *.key
 *.mobileprovision
 
-# iOS
-client/ios/Pods
-client/ios/build/
-client/ios/*.xcworkspace
-client/ios/*.xcuserstate
-client/ios/.DS_Store
-
-# Android
-client/android/.gradle
-client/android/app/build/
-client/android/local.properties
-
-# Metro / Cache
-.expo/
-dist/
-web-build/
-*.bundle
-*.map
-*.packager-info.json
-*.vscode
-
 # ----------------------
-# Express.js (server)
+# Express.js (Server)
 # ----------------------
-server/node_modules
+server/node_modules/
 server/.env
 server/.env.local
+server/dist/
+server/.vscode/
 
 # ----------------------
-# AWS / Credentials
+# AWS / Cloud Credentials
 # ----------------------
 .aws/
 *.pem
+*.key
 
 # ----------------------
 # macOS / OS Files
@@ -61,10 +65,15 @@ Thumbs.db
 # ----------------------
 # Logs
 # ----------------------
-logs
+logs/
 *.log
 *.log.*
 
-# Editors
+# ----------------------
+# IDE / Editors
+# ----------------------
 .vscode/
 .cursor/
+.idea/
+*.swp
+*.swo
