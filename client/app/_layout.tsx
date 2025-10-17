@@ -18,6 +18,9 @@ export default function RootLayout() {
             headerShown: false,
           }}
         />
+
+        {/* Main app with tabs (Camera, Files, Profile) */}
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       </Stack>
     </GestureHandlerRootView>
   );

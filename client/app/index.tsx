@@ -38,8 +38,19 @@ export default function Onboarding() {
   return (
     <View className="flex-1 bg-white">
       {/* Skip */}
-      <TouchableOpacity className="absolute top-16 right-6 z-10">
+      <TouchableOpacity 
+        className="absolute top-16 right-6 z-10"
+        onPress={() => router.push("/paywall")}
+      >
         <Text className="text-[#259fc7] font-semibold">SKIP</Text>
+      </TouchableOpacity>
+
+      {/* 🧪 TEMPORARY: Test Camera Button - Remove in production */}
+      <TouchableOpacity 
+        className="absolute top-16 left-6 z-10 bg-orange-500 px-3 py-2 rounded-lg"
+        onPress={() => router.push("/(tabs)/camera")}
+      >
+        <Text className="text-white font-semibold text-xs">🧪 TEST CAMERA</Text>
       </TouchableOpacity>
 
       {/* Slides */}
