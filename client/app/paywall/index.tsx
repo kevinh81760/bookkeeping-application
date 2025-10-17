@@ -6,8 +6,8 @@ import * as WebBrowser from "expo-web-browser";
 export default function Paywall() {
   const [reminder, setReminder] = useState(false);
   const router = useRouter();
-  const BACKEND_URL = "http://localhost:4000"; // replace with local IP when testing on device
-
+  const BACKEND_URL = "http://172.16.46.89:4000";
+  
   const handleStartTrial = async () => {
     try {
       await WebBrowser.openBrowserAsync(`${BACKEND_URL}/api/auth/google`);
