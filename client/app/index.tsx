@@ -39,7 +39,7 @@ export default function Onboarding() {
     <View className="flex-1 bg-white">
       {/* Skip */}
       <TouchableOpacity className="absolute top-16 right-6 z-10">
-        <Text className="text-[#D75C3E] font-semibold">SKIP</Text>
+        <Text className="text-[#259fc7] font-semibold">SKIP</Text>
       </TouchableOpacity>
 
       {/* Slides */}
@@ -78,7 +78,7 @@ export default function Onboarding() {
           <View
             key={i}
             className={`w-2.5 h-2.5 rounded-full mx-1 ${
-              i === index ? "bg-[#D75C3E]" : "bg-gray-300"
+              i === index ? "bg-[#259fc7]" : "bg-gray-300"
             }`}
           />
         ))}
@@ -88,7 +88,7 @@ export default function Onboarding() {
       <View className="items-center mb-10">
         <TouchableOpacity
           onPress={handleNext}
-          className="bg-[#D75C3E] w-[85%] py-4 rounded-2xl active:opacity-80"
+          className="bg-[#259fc7] w-[85%] py-4 rounded-2xl active:opacity-80"
         >
           <Text className="text-white font-semibold text-lg text-center">
             {index === slides.length - 1 ? "Get started" : "Next"}

@@ -33,26 +33,31 @@ export default function Paywall() {
             <Feature text="First 7 days free — cancel anytime" />
           </View>
 
-          <Text className="text-center text-gray-500 mb-4 mt-28">
-            7 days free, then $4.99/month
-          </Text>
+          {/* Outer wrapper for pricing section */}
+          <View className="relative mt-24 pt-5">
+            <View className="bg-gray-50 p-4 rounded-2xl">
+              <Text className="text-center text-gray-500 mb-4 mt-4">
+                7 days free, then $4.99/month
+              </Text>
 
-          <TouchableOpacity className="bg-[#D75C3E] py-4 rounded-2xl mb-4 active:opacity-80">
+          <TouchableOpacity className="bg-[#259fc7] py-4 rounded-2xl mb-4 active:opacity-80">
             <Text className="text-white text-center font-semibold text-lg">
               Start free trial
             </Text>
           </TouchableOpacity>
 
-          <View className="flex-row justify-between items-center border border-gray-300 rounded-2xl px-4 py-3">
-            <Text className="text-gray-700 font-medium flex-1">
-              Get notified before trial ends
-            </Text>
-            <Switch
-              value={reminder}
-              onValueChange={setReminder}
-              thumbColor={reminder ? "#D75C3E" : "#f4f3f4"}
-              trackColor={{ false: "#e5e5e5", true: "#ffcccc" }}
-            />
+              <View className="flex-row justify-between items-center border border-gray-300 rounded-2xl px-4 py-3">
+                <Text className="text-gray-700 font-medium flex-1">
+                  Get notified before trial ends
+                </Text>
+                <Switch
+                  value={reminder}
+                  onValueChange={setReminder}
+                  thumbColor={reminder ? "#259fc7" : "#f4f3f4"}
+                  trackColor={{ false: "#e5e5e5", true: "#b3ddf0" }}
+                />
+              </View>
+            </View>
           </View>
         </View>
       </View>
