@@ -1,4 +1,11 @@
-import { View, Text, TouchableOpacity, Switch, Alert } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Switch,
+  Alert,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useState, useEffect } from "react";
 import { useRouter, Stack } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
@@ -20,10 +27,8 @@ export default function Paywall() {
       const { url } = event;
       console.log("🔗 Deep link received:", url);
 
-      // Check if this is an auth callback
       if (url.includes("auth")) {
         try {
-          // Parse URL parameters
           const params = new URLSearchParams(url.split("?")[1]);
           const token = params.get("token");
           const error = params.get("error");
@@ -38,11 +43,8 @@ export default function Paywall() {
           }
 
           if (token) {
-            // Save JWT token securely
             await SecureStore.setItemAsync("userToken", token);
             console.log("✅ Token saved successfully!");
-
-            // Navigate to main app (Camera screen)
             router.replace("/(tabs)/camera");
             setLoading(false);
           }
@@ -54,10 +56,7 @@ export default function Paywall() {
       }
     };
 
-    // Subscribe to deep link events
     const subscription = Linking.addEventListener("url", handleDeepLink);
-
-    // Cleanup subscription on unmount
     return () => {
       subscription.remove();
     };
@@ -68,18 +67,14 @@ export default function Paywall() {
       setLoading(true);
       console.log("🚀 Opening Google OAuth...");
 
-      // Use openAuthSessionAsync for OAuth flows
-      // This will automatically close the browser when redirect happens
       const result = await WebBrowser.openAuthSessionAsync(
         `${BACKEND_URL}/api/auth/google`,
-        "client://auth" // Must match the scheme in app.json
+        "client://auth"
       );
 
       console.log("📱 Auth session result:", result);
 
-      // Handle result types
       if (result.type === "success") {
-        // The deep link listener will handle the token
         console.log("✅ Auth completed, waiting for deep link...");
       } else if (result.type === "cancel") {
         console.log("❌ User cancelled login");
@@ -100,29 +95,27 @@ export default function Paywall() {
 
   return (
     <>
-      {/* Hide the default route header */}
       <Stack.Screen options={{ headerShown: false }} />
 
-      <View className="flex-1 bg-white justify-between">
-        {/* Close button */}
-        <View className="items-end pt-4 pr-4">
+      <View className="flex-1 bg-white">
+        {/* Close button with safe area + lower offset */}
+        <SafeAreaView edges={["top"]} className="items-end pr-4">
           <TouchableOpacity
-            onPress={() => router.back()}
-            className="w-8 h-8 items-center justify-center"
+            onPress={() => router.replace("/")}
+            className="w-10 h-10 items-center justify-center mt-3"
           >
             <Text className="text-gray-500 text-2xl">✕</Text>
           </TouchableOpacity>
-        </View>
+        </SafeAreaView>
 
         {/* Main content */}
-        <View className="flex-1 justify-between px-6 pb-10 py-10">
-          {/* Top features */}
+        <View className="flex-1 justify-between px-6 pb-10">
           <View className="mt-10">
             <Text className="text-2xl font-bold text-center mb-4">
               Start simplifying today
             </Text>
 
-            <View className="mb-16">
+            <View className="mb-16 ml-6">
               <Feature text="Auto-categorize receipts by type" />
               <Feature text="Sync with Google Sheets & CPA tools" />
               <Feature text="Generate monthly summaries automatically" />
@@ -130,7 +123,6 @@ export default function Paywall() {
             </View>
           </View>
 
-          {/* Pricing box anchored lower */}
           <View className="bg-gray-50 p-4 rounded-2xl">
             <Text className="text-center text-gray-500 mb-4 mt-2">
               7 days free, then $4.99/month
