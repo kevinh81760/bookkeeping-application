@@ -3,7 +3,6 @@ import {
   View,
   Text,
   TouchableOpacity,
-  StyleSheet,
   Alert,
   Platform,
 } from "react-native";
@@ -11,24 +10,7 @@ import { CameraView, CameraType, FlashMode, useCameraPermissions } from "expo-ca
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import * as MediaLibrary from "expo-media-library";
-import { saveReceiptLocally } from "@/lib/localStorage";
-
-// Design constants
-const COLORS = {
-  background: "#111827", // Dark background (gray-900)
-  surface: "#1F2937", // Surface (gray-800)
-  accent: "#259fc7", // Your brand blue
-  text: "#F9FAFB", // White text
-  textSecondary: "#9CA3AF", // Gray text
-  border: "#374151", // Border gray
-};
-
-const SIZES = {
-  captureButton: 80,
-  smallIcon: 48,
-  iconSize: 28,
-  borderRadius: 20,
-};
+import { saveReceiptLocally } from "@/services/storage";
 
 export default function CameraScreen() {
   // Camera state
@@ -47,26 +29,26 @@ export default function CameraScreen() {
   // Handle permission states
   if (!permission) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.message}>Loading camera...</Text>
+      <View className="flex-1 bg-gray-900">
+        <Text className="text-base text-gray-400 text-center">Loading camera...</Text>
       </View>
     );
   }
 
   if (!permission.granted) {
     return (
-      <View style={styles.container}>
-        <View style={styles.permissionContainer}>
-          <Ionicons name="camera-outline" size={64} color={COLORS.textSecondary} />
-          <Text style={styles.permissionTitle}>Camera Access Required</Text>
-          <Text style={styles.permissionMessage}>
+      <View className="flex-1 bg-gray-900">
+        <View className="flex-1 justify-center items-center p-8">
+          <Ionicons name="camera-outline" size={64} color="#9CA3AF" />
+          <Text className="text-2xl font-bold text-gray-50 mt-6 mb-3">Camera Access Required</Text>
+          <Text className="text-base text-gray-400 text-center leading-6 mb-8">
             We need access to your camera to scan receipts
           </Text>
           <TouchableOpacity
-            style={styles.permissionButton}
+            className="bg-[#259fc7] py-4 px-8 rounded-xl"
             onPress={requestPermission}
           >
-            <Text style={styles.permissionButtonText}>Grant Permission</Text>
+            <Text className="text-base font-semibold text-gray-50">Grant Permission</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -155,189 +137,71 @@ export default function CameraScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View className="flex-1 bg-gray-900">
       {/* Camera Preview */}
-      <View style={styles.cameraContainer}>
+      <View className="flex-1">
         <CameraView
           ref={cameraRef}
-          style={styles.camera}
+          style={{ flex: 1, width: '100%', height: '100%' }}
           facing={facing}
           flash={flash}
+          mode="picture"
         >
           {/* Top Bar - Flash Toggle */}
-          <View style={styles.topBar}>
-            <View style={styles.topBarSpacer} />
+          <View className={`flex-row justify-between items-center ${Platform.OS === "ios" ? "pt-[50px]" : "pt-4"} px-5`}>
+            <View className="w-12" />
             <TouchableOpacity
-              style={styles.flashButton}
+              className="w-12 h-12 rounded-full bg-gray-800/80 justify-center items-center"
               onPress={toggleFlash}
               activeOpacity={0.7}
             >
               <Ionicons
                 name={flash === "on" ? "flash" : "flash-off"}
                 size={24}
-                color={flash === "on" ? COLORS.accent : COLORS.text}
+                color={flash === "on" ? "#259fc7" : "#F9FAFB"}
               />
             </TouchableOpacity>
           </View>
-
-          {/* Bottom Controls */}
-          <View style={styles.controlsContainer}>
-            {/* Label */}
-            <Text style={styles.label}>SNAP A RECEIPT</Text>
-
-            {/* Control Row */}
-            <View style={styles.controlRow}>
-              {/* Gallery Button (Left) */}
-              <TouchableOpacity
-                style={styles.smallButton}
-                onPress={openGallery}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="images" size={SIZES.iconSize} color={COLORS.text} />
-              </TouchableOpacity>
-
-              {/* Capture Button (Center) */}
-              <TouchableOpacity
-                style={styles.captureButton}
-                onPress={capturePhoto}
-                activeOpacity={0.8}
-              >
-                <View style={styles.captureButtonInner} />
-              </TouchableOpacity>
-
-              {/* Document Upload Button (Right) */}
-              <TouchableOpacity
-                style={styles.smallButton}
-                onPress={openDocumentPicker}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="document" size={SIZES.iconSize} color={COLORS.text} />
-              </TouchableOpacity>
-            </View>
-          </View>
         </CameraView>
+      </View>
+
+      {/* Bottom Controls - Outside camera to avoid being cut off */}
+      <View className="absolute bottom-0 left-0 right-0 items-center" style={{ paddingBottom: Platform.OS === "ios" ? 40 : 30 }}>
+        {/* Label */}
+        <Text className="text-sm font-bold text-gray-50 tracking-[2px] mb-6" style={{ textShadowColor: "rgba(0, 0, 0, 0.8)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 }}>
+          SNAP A RECEIPT
+        </Text>
+
+        {/* Control Row */}
+        <View className="flex-row items-center justify-between w-full px-10">
+          {/* Gallery Button (Left) */}
+          <TouchableOpacity
+            className="w-12 h-12 rounded-full bg-gray-800/80 justify-center items-center"
+            onPress={openGallery}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="images" size={28} color="#F9FAFB" />
+          </TouchableOpacity>
+
+          {/* Capture Button (Center) */}
+          <TouchableOpacity
+            className="w-20 h-20 rounded-full bg-gray-800/80 justify-center items-center border-4 border-gray-50"
+            onPress={capturePhoto}
+            activeOpacity={0.8}
+          >
+            <View className="w-16 h-16 rounded-full bg-gray-50" />
+          </TouchableOpacity>
+
+          {/* Document Upload Button (Right) */}
+          <TouchableOpacity
+            className="w-12 h-12 rounded-full bg-gray-800/80 justify-center items-center"
+            onPress={openDocumentPicker}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="document" size={28} color="#F9FAFB" />
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  cameraContainer: {
-    flex: 1,
-    margin: 16,
-    borderRadius: SIZES.borderRadius,
-    overflow: "hidden",
-  },
-  camera: {
-    flex: 1,
-  },
-  topBar: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingTop: Platform.OS === "ios" ? 50 : 16,
-    paddingHorizontal: 20,
-  },
-  topBarSpacer: {
-    width: 48,
-  },
-  flashButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: "rgba(31, 41, 55, 0.8)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  controlsContainer: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingBottom: 120, // Space for tab bar
-    alignItems: "center",
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: COLORS.text,
-    letterSpacing: 2,
-    marginBottom: 24,
-    textShadowColor: "rgba(0, 0, 0, 0.8)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 4,
-  },
-  controlRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    width: "100%",
-    paddingHorizontal: 40,
-  },
-  captureButton: {
-    width: SIZES.captureButton,
-    height: SIZES.captureButton,
-    borderRadius: SIZES.captureButton / 2,
-    backgroundColor: "rgba(31, 41, 55, 0.8)",
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 4,
-    borderColor: COLORS.text,
-  },
-  captureButtonInner: {
-    width: SIZES.captureButton - 16,
-    height: SIZES.captureButton - 16,
-    borderRadius: (SIZES.captureButton - 16) / 2,
-    backgroundColor: COLORS.text,
-  },
-  smallButton: {
-    width: SIZES.smallIcon,
-    height: SIZES.smallIcon,
-    borderRadius: SIZES.smallIcon / 2,
-    backgroundColor: "rgba(31, 41, 55, 0.8)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  // Permission Screen
-  permissionContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 32,
-  },
-  permissionTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: COLORS.text,
-    marginTop: 24,
-    marginBottom: 12,
-  },
-  permissionMessage: {
-    fontSize: 16,
-    color: COLORS.textSecondary,
-    textAlign: "center",
-    lineHeight: 24,
-    marginBottom: 32,
-  },
-  permissionButton: {
-    backgroundColor: COLORS.accent,
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    borderRadius: 12,
-  },
-  permissionButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: COLORS.text,
-  },
-  message: {
-    fontSize: 16,
-    color: COLORS.textSecondary,
-    textAlign: "center",
-  },
-});
-
