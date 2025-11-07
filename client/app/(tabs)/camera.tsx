@@ -101,24 +101,37 @@ export default function CameraScreen() {
     }
   };
 
-  // Open gallery to select existing image
+  // Open gallery to select multiple images
   const openGallery = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: "images",
-        allowsEditing: true,
+        allowsMultipleSelection: true, // ✅ Enable multiple selection
+        allowsEditing: false, // ❌ Disable editing when selecting multiple
         quality: 0.8,
+        selectionLimit: 10, // Optional: limit number of selections (0 = unlimited)
       });
 
-      if (!result.canceled && result.assets[0]) {
-        console.log("📁 Image selected from gallery:", result.assets[0].uri);
+      if (!result.canceled && result.assets.length > 0) {
+        const selectedCount = result.assets.length;
+        console.log(`📁 ${selectedCount} image(s) selected from gallery`);
+
+        // Save all selected images locally
+        for (const asset of result.assets) {
+          console.log("💾 Saving:", asset.uri);
+          await saveReceiptLocally(asset.uri);
+        }
+
         Alert.alert(
-          "Image Selected",
-          "Add upload logic here to process this image.",
+          "Success! 📁",
+          `${selectedCount} photo${selectedCount > 1 ? 's' : ''} saved!\n\n• Go to Files tab to see them\n• Upload functionality coming soon`,
           [{ text: "OK" }]
         );
-        // TODO: Upload to server
-        // await uploadReceiptToServer(result.assets[0].uri);
+
+        // TODO: Upload all to server when backend is ready
+        // for (const asset of result.assets) {
+        //   await uploadReceipt({ imageUri: asset.uri, folderId: "xxx" });
+        // }
       }
     } catch (error) {
       console.error("❌ Error opening gallery:", error);

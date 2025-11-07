@@ -26,8 +26,8 @@ app.get("/", (req, res) => {
 });
 
 // Step 4: Start server
-app.listen(PORT, () => {
-  console.log(`http://localhost:4000`);
+app.listen(PORT, '0.0.0.0',() => {
+  console.log(`http://localhost:${PORT}`);
 });
 
 

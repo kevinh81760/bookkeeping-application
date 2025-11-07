@@ -1,11 +1,83 @@
-import React from "react";
-import { View, Text, TouchableOpacity, Alert } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, TouchableOpacity, Alert, Image } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as SecureStore from "expo-secure-store";
 import { useRouter } from "expo-router";
 
+interface UserData {
+  name: string;
+  email: string;
+  picture?: string;
+}
+
 export default function ProfileScreen() {
   const router = useRouter();
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Decode JWT token to get user info
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        const token = await SecureStore.getItemAsync("userToken");
+        console.log("🔑 Token exists:", !!token);
+        
+        if (token) {
+          console.log("🔍 Full token (first 50 chars):", token.substring(0, 50) + "...");
+          console.log("🔍 Token parts count:", token.split('.').length);
+          
+          // Decode JWT (it's base64 encoded in 3 parts: header.payload.signature)
+          const parts = token.split('.');
+          
+          if (parts.length !== 3) {
+            console.error("❌ Invalid JWT format - expected 3 parts, got", parts.length);
+            Alert.alert("Token Error", "Invalid token format. Please log in again.");
+            return;
+          }
+          
+          const payload = parts[1];
+          console.log("🔍 Raw payload (base64):", payload);
+          
+          // Decode base64 payload
+          const decoded = JSON.parse(atob(payload));
+          
+          console.log("👤 Decoded user data:", JSON.stringify(decoded, null, 2));
+          console.log("📧 Email:", decoded.email);
+          console.log("👤 Name:", decoded.name);
+          console.log("🖼️ Picture:", decoded.picture);
+          console.log("🆔 User ID:", decoded.userId);
+          
+          // Check if we have the new token format with name/email
+          if (!decoded.name || !decoded.email) {
+            console.warn("⚠️ Old token format detected - please log out and log back in to see your profile info");
+            Alert.alert(
+              "Token Update Required",
+              "Your session needs to be refreshed. Please log out and log back in to see your profile info.",
+              [
+                { text: "OK" }
+              ]
+            );
+          }
+          
+          setUserData({
+            name: decoded.name || "User",
+            email: decoded.email || "",
+            picture: decoded.picture
+          });
+        } else {
+          console.warn("⚠️ No token found in SecureStore");
+          Alert.alert("No Session", "Please log in to view your profile.");
+        }
+      } catch (error) {
+        console.error("❌ Error loading user data:", error);
+        Alert.alert("Error", "Failed to load profile data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadUserData();
+  }, []);
 
   const handleLogout = async () => {
     Alert.alert(
@@ -38,11 +110,22 @@ export default function ProfileScreen() {
       <View className="flex-1 px-6">
         {/* Profile Picture */}
         <View className="items-center py-8 border-b border-gray-700">
-          <View className="w-[100px] h-[100px] rounded-full bg-gray-800 justify-center items-center mb-4">
-            <Ionicons name="person" size={48} color="#9CA3AF" />
-          </View>
-          <Text className="text-2xl font-bold text-gray-50 mb-1">John Doe</Text>
-          <Text className="text-base text-gray-400">john@example.com</Text>
+          {userData?.picture ? (
+            <Image 
+              source={{ uri: userData.picture }}
+              className="w-[100px] h-[100px] rounded-full mb-4"
+            />
+          ) : (
+            <View className="w-[100px] h-[100px] rounded-full bg-gray-800 justify-center items-center mb-4">
+              <Ionicons name="person" size={48} color="#9CA3AF" />
+            </View>
+          )}
+          <Text className="text-2xl font-bold text-gray-50 mb-1">
+            {loading ? "Loading..." : userData?.name || "User"}
+          </Text>
+          <Text className="text-base text-gray-400">
+            {loading ? "" : userData?.email || ""}
+          </Text>
         </View>
 
         {/* Settings */}

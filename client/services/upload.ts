@@ -9,8 +9,7 @@
  */
 
 import * as SecureStore from "expo-secure-store";
-
-const BACKEND_URL = "http://172.16.46.89:4000";
+import { BACKEND_URL } from "../config/api";
 
 interface UploadReceiptParams {
   imageUri: string;

@@ -19,7 +19,15 @@ export default function Paywall() {
   const [reminder, setReminder] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const BACKEND_URL = "http://172.16.46.89:4000";
+  const BACKEND_URL = "http://localhost:4000";
+
+  // 🧪 TEST: Check if backend is reachable
+  useEffect(() => {
+    fetch('http://localhost:4000/')
+      .then(res => res.text())
+      .then(text => console.log('✅ Backend reachable:', text))
+      .catch(err => console.error('❌ Cannot reach backend:', err));
+  }, []);
 
   // Listen for deep link redirects from OAuth callback
   useEffect(() => {
@@ -28,10 +36,13 @@ export default function Paywall() {
       console.log("🔗 Deep link received:", url);
 
       if (url.includes("auth")) {
+        console.log("🔐 Auth deep link detected, processing...");
         try {
           const params = new URLSearchParams(url.split("?")[1]);
           const token = params.get("token");
           const error = params.get("error");
+
+          console.log("📝 Extracted params - token:", token ? "present" : "missing", "error:", error || "none");
 
           if (error) {
             Alert.alert(
@@ -43,21 +54,44 @@ export default function Paywall() {
           }
 
           if (token) {
+            console.log("💾 [Deep Link] Saving token and redirecting...");
+            console.log("🔍 [Deep Link] Token (first 50 chars):", token.substring(0, 50) + "...");
+            
+            // Decode and log token payload for debugging
+            try {
+              const parts = token.split('.');
+              if (parts.length === 3) {
+                const payload = JSON.parse(atob(parts[1]));
+                console.log("👤 [Deep Link] Token payload:", JSON.stringify(payload, null, 2));
+              } else {
+                console.warn("⚠️ [Deep Link] Token doesn't have 3 parts:", parts.length);
+              }
+            } catch (decodeError) {
+              console.error("❌ [Deep Link] Failed to decode token:", decodeError);
+            }
+            
             await SecureStore.setItemAsync("userToken", token);
-            console.log("✅ Token saved successfully!");
+            console.log("✅ [Deep Link] Token saved, navigating to camera...");
             router.replace("/(tabs)/camera");
+            setLoading(false);
+          } else {
+            console.warn("⚠️ Token not found in deep link params");
             setLoading(false);
           }
         } catch (err) {
-          console.error("Error handling deep link:", err);
+          console.error("❌ Error handling deep link:", err);
           Alert.alert("Error", "Failed to process login. Please try again.");
           setLoading(false);
         }
+      } else {
+        console.log("ℹ️ Deep link does not contain 'auth', ignoring");
       }
     };
 
+    console.log("👂 Deep link listener registered");
     const subscription = Linking.addEventListener("url", handleDeepLink);
     return () => {
+      console.log("🔇 Deep link listener removed");
       subscription.remove();
     };
   }, [router]);
@@ -72,15 +106,62 @@ export default function Paywall() {
         "client://auth"
       );
 
-      console.log("📱 Auth session result:", result);
+      console.log("📱 Auth session result:", JSON.stringify(result, null, 2));
 
-      if (result.type === "success") {
-        console.log("✅ Auth completed, waiting for deep link...");
+      if (result.type === "success" && result.url) {
+        console.log("✅ Success URL received:", result.url);
+        
+        // Handle the URL directly if it contains auth data
+        if (result.url.includes("auth")) {
+          try {
+            const params = new URLSearchParams(result.url.split("?")[1]);
+            const token = params.get("token");
+            const error = params.get("error");
+
+            if (error) {
+              Alert.alert(
+                "Login Failed",
+                "Unable to authenticate with Google. Please try again."
+              );
+              setLoading(false);
+              return;
+            }
+
+            if (token) {
+              console.log("💾 [Success URL] Saving token and redirecting...");
+              console.log("🔍 [Success URL] Token (first 50 chars):", token.substring(0, 50) + "...");
+              
+              // Decode and log token payload for debugging
+              try {
+                const parts = token.split('.');
+                if (parts.length === 3) {
+                  const payload = JSON.parse(atob(parts[1]));
+                  console.log("👤 [Success URL] Token payload:", JSON.stringify(payload, null, 2));
+                } else {
+                  console.warn("⚠️ [Success URL] Token doesn't have 3 parts:", parts.length);
+                }
+              } catch (decodeError) {
+                console.error("❌ [Success URL] Failed to decode token:", decodeError);
+              }
+              
+              await SecureStore.setItemAsync("userToken", token);
+              console.log("✅ [Success URL] Token saved, navigating to camera...");
+              router.replace("/(tabs)/camera");
+              setLoading(false);
+            }
+          } catch (err) {
+            console.error("Error parsing success URL:", err);
+            setLoading(false);
+          }
+        }
       } else if (result.type === "cancel") {
         console.log("❌ User cancelled login");
         setLoading(false);
       } else if (result.type === "dismiss") {
         console.log("ℹ️ Browser dismissed");
+        setLoading(false);
+      } else {
+        console.log("⚠️ Unknown result type:", result.type);
         setLoading(false);
       }
     } catch (error) {

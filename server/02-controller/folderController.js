@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
 import { db } from "../03-services/dynamo.js";
-import { PutCommand } from "@aws-sdk/lib-dynamodb";
+import { PutCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
 
 export async function createFolder(req, res) {
   try {
@@ -63,3 +63,36 @@ export async function createFolder(req, res) {
     });
   }
 }
+
+// Get all folders for a user
+export async function getFolders(req, res) {
+  try {
+    // User ID from JWT middleware (or fallback for testing)
+    const userId = req.user?.userId || "test-user";
+
+    // Query DynamoDB for all folders belonging to this user
+    const params = {
+      TableName: process.env.DYNAMO_FOLDERS_TABLE,
+      KeyConditionExpression: "userId = :userId",
+      ExpressionAttributeValues: {
+        ":userId": userId,
+      },
+      ScanIndexForward: false, // Sort by most recent first
+    };
+
+    const result = await db.send(new QueryCommand(params));
+
+    // Return folders array (or empty array if none found)
+    res.json({
+      folders: result.Items || [],
+      count: result.Items?.length || 0,
+    });
+  } catch (err) {
+    console.error("Error fetching folders:", err);
+    res.status(500).json({
+      error: "Failed to fetch folders",
+      details: err.message,
+    });
+  }
+}
+

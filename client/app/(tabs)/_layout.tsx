@@ -41,6 +41,7 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="folder-open" size={size} color={color} />
           ),
+          headerShown: false,
         }}
       />
       <Tabs.Screen

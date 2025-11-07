@@ -12,12 +12,30 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const STORAGE_KEY = "@receipts";
+const FOLDERS_KEY = "@folders";
 
 export interface LocalReceipt {
   id: string;
   uri: string;
   timestamp: number;
   filename: string;
+  folderId?: string; // Optional: which folder this receipt belongs to
+}
+
+export interface LocalFolder {
+  id: string;
+  name: string;
+  description: string;
+  categories: Array<{
+    name: string;
+    type: "Text" | "Number" | "Date";
+    required: boolean;
+  }>;
+  advanced: {
+    ocrParseFrom: string;
+    validationRules: string;
+  };
+  timestamp: number;
 }
 
 /**
@@ -88,6 +106,95 @@ export async function clearAllReceipts(): Promise<void> {
   } catch (error) {
     console.error("❌ Error clearing receipts:", error);
     throw error;
+  }
+}
+
+// ============================================
+// FOLDER MANAGEMENT
+// ============================================
+
+/**
+ * Save a folder locally
+ */
+export async function saveFolderLocally(folderData: {
+  folderName: string;
+  description: string;
+  categories: Array<{
+    name: string;
+    type: "Text" | "Number" | "Date";
+    required: boolean;
+  }>;
+  advanced: {
+    ocrParseFrom: string;
+    validationRules: string;
+  };
+}): Promise<LocalFolder> {
+  try {
+    // Get existing folders
+    const folders = await getLocalFolders();
+
+    // Create new folder
+    const newFolder: LocalFolder = {
+      id: Date.now().toString(),
+      name: folderData.folderName,
+      description: folderData.description,
+      categories: folderData.categories,
+      advanced: folderData.advanced,
+      timestamp: Date.now(),
+    };
+
+    // Add to list
+    folders.unshift(newFolder); // Add to beginning
+
+    // Save back
+    await AsyncStorage.setItem(FOLDERS_KEY, JSON.stringify(folders));
+
+    console.log("💾 Saved folder locally:", newFolder.id);
+    return newFolder;
+  } catch (error) {
+    console.error("❌ Error saving folder locally:", error);
+    throw error;
+  }
+}
+
+/**
+ * Get all locally saved folders
+ */
+export async function getLocalFolders(): Promise<LocalFolder[]> {
+  try {
+    const data = await AsyncStorage.getItem(FOLDERS_KEY);
+    return data ? JSON.parse(data) : [];
+  } catch (error) {
+    console.error("❌ Error loading folders:", error);
+    return [];
+  }
+}
+
+/**
+ * Delete a local folder
+ */
+export async function deleteLocalFolder(id: string): Promise<void> {
+  try {
+    const folders = await getLocalFolders();
+    const filtered = folders.filter((f) => f.id !== id);
+    await AsyncStorage.setItem(FOLDERS_KEY, JSON.stringify(filtered));
+    console.log("🗑️ Deleted folder:", id);
+  } catch (error) {
+    console.error("❌ Error deleting folder:", error);
+    throw error;
+  }
+}
+
+/**
+ * Get a single folder by ID
+ */
+export async function getLocalFolder(id: string): Promise<LocalFolder | null> {
+  try {
+    const folders = await getLocalFolders();
+    return folders.find((f) => f.id === id) || null;
+  } catch (error) {
+    console.error("❌ Error getting folder:", error);
+    return null;
   }
 }
 

@@ -34,5 +34,11 @@ export async function exchangeCodeForTokens(code) {
   });
   const profile = await res.json();
 
+  console.log("🔍 [Google] Raw profile data from Google:", JSON.stringify(profile, null, 2));
+  console.log("📧 [Google] Email:", profile.email);
+  console.log("👤 [Google] Name:", profile.name);
+  console.log("🖼️ [Google] Picture:", profile.picture);
+  console.log("🆔 [Google] ID:", profile.id);
+
   return { tokens, profile };
 }
