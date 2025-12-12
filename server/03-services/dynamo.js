@@ -1,5 +1,5 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, PutCommand, GetCommand, DeleteCommand } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient, PutCommand, GetCommand, DeleteCommand, QueryCommand, ScanCommand } from "@aws-sdk/lib-dynamodb";
 import dotenv from "dotenv";
 dotenv.config();
 import { randomUUID } from "crypto";
@@ -102,4 +102,32 @@ export async function saveReceipt(userId, folderId, fileName, s3Path, receiptDat
   }));
 
   return receiptRecord;
+}
+
+
+export async function getReceiptsByFolder(userId, folderId) {
+  // Use ScanCommand with filter since we don't have a GSI on folderId
+  // In production, you should create a GSI for better performance
+  const params = {
+    TableName: process.env.DYNAMO_RECEIPTS_TABLE,
+    FilterExpression: "userId = :userId AND folderId = :folderId",
+    ExpressionAttributeValues: {
+      ":userId": userId,
+      ":folderId": folderId,
+    },
+  };
+
+  const result = await db.send(new ScanCommand(params));
+  return result.Items || [];
+}
+
+
+export async function getFolder(userId, folderId) {
+  const params = {
+    TableName: process.env.DYNAMO_FOLDERS_TABLE,
+    Key: { userId, folderId },
+  };
+
+  const result = await db.send(new GetCommand(params));
+  return result.Item || null;
 }

@@ -5,6 +5,7 @@ import cors from "cors";
 import authRoutes from "./01-routes/authRoutes.js";
 import uploadRoutes from "./01-routes/uploadRoutes.js";
 import foldersRoutes from "./01-routes/foldersRoutes.js";
+import sheetRoutes from "./01-routes/sheetRoutes.js";
 import { authMiddleware } from "./04-middleware/authMiddleware.js";
 
 const app = express();
@@ -19,6 +20,7 @@ app.use(express.urlencoded({ extended: true })); // parse form/urlencoded reques
 app.use("/api", authRoutes);            // auth routes (Google OAuth)
 app.use("/folders", authMiddleware, foldersRoutes);       // folders routes
 app.use("/upload", authMiddleware, uploadRoutes);       // file upload routes
+app.use("/sheets", authMiddleware, sheetRoutes);        // Google Sheets export routes
 
 // Step 3: Health check route
 app.get("/", (req, res) => {

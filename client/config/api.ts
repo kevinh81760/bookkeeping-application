@@ -11,12 +11,13 @@
  */
 
 // Change this based on your environment
+// For physical device testing, use your computer's IP address
 const BACKEND_URL = __DEV__
-  ? "http://localhost:4000" // Development (simulator/same machine)
+  ? "http://192.168.0.130:4000" // Physical device on same WiFi network
   : "https://your-production-api.com"; // Production
 
-// For physical device testing on same network, uncomment and use your computer's IP:
-// const BACKEND_URL = "http://192.168.1.100:4000";
+// For simulator/emulator testing on same machine, use:
+// const BACKEND_URL = "http://localhost:4000";
 
 export { BACKEND_URL };
 
