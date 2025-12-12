@@ -68,6 +68,8 @@ export async function saveUser(profile) {
 
 
 export async function getFolderColumns(folderId, userId) {
+  console.log(`🔍 [DynamoDB] getFolderColumns - userId: ${userId}, folderId: ${folderId}`);
+  
   const params = {
     TableName: process.env.DYNAMO_FOLDERS_TABLE,
     Key: { userId, folderId },
@@ -75,7 +77,12 @@ export async function getFolderColumns(folderId, userId) {
 
   const result = await db.send(new GetCommand(params));
 
-  if (!result.Item) return null;
+  if (!result.Item) {
+    console.log(`⚠️ [DynamoDB] No folder found with userId=${userId}, folderId=${folderId}`);
+    return null;
+  }
+  
+  console.log(`✅ [DynamoDB] Found folder:`, result.Item.name);
 
   // Extract column names from categories array
   // categories is now an array of objects: [{name, type, required}, ...]
@@ -116,22 +123,23 @@ export async function saveReceipt(userId, folderId, fileName, s3Path, receiptDat
 
 
 export async function getReceiptsByFolder(userId, folderId) {
-  // Query all receipts for the user (efficient with PK=userId)
-  // Then filter by folderId in application code
+  console.log(`🔍 [DynamoDB] getReceiptsByFolder - userId: ${userId}, folderId: ${folderId}`);
+  
+  // Query by folderId (partition key) - no need to filter by userId since all receipts in this folder belong to the same user
   const params = {
     TableName: process.env.DYNAMO_RECEIPTS_TABLE,
-    KeyConditionExpression: "userId = :userId",
+    KeyConditionExpression: "folderId = :folderId",
     ExpressionAttributeValues: {
-      ":userId": userId,
+      ":folderId": folderId,
     },
   };
 
   const result = await db.send(new QueryCommand(params));
-  const allReceipts = result.Items || [];
+  const receipts = result.Items || [];
   
-  // Filter by folderId in application code
-  // Note: For production with many receipts, consider creating a GSI on folderId
-  return allReceipts.filter(receipt => receipt.folderId === folderId);
+  console.log(`✅ [DynamoDB] Found ${receipts.length} receipts for folder ${folderId}`);
+
+  return receipts;
 }
 
 

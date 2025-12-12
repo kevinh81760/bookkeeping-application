@@ -86,12 +86,39 @@ export async function exportFolderToSheets(folderId: string): Promise<ExportResp
 /**
  * Download folder as CSV file
  * 
- * Note: This would require handling file downloads in React Native
- * which is more complex. For now, we'll focus on Google Sheets export.
- * 
  * @param folderId - The ID of the folder to download
+ * @returns CSV content as string
  */
-export async function downloadFolderAsCSV(folderId: string): Promise<void> {
-  // TODO: Implement CSV download if needed
-  throw new Error("CSV download not yet implemented. Use Google Sheets export instead.");
+export async function downloadFolderAsCSV(folderId: string): Promise<string> {
+  try {
+    const token = await SecureStore.getItemAsync("userToken");
+    
+    if (!token) {
+      throw new Error("Not authenticated. Please log in first.");
+    }
+
+    console.log(`📥 Downloading CSV for folder ${folderId}...`);
+
+    const response = await fetch(`${BACKEND_URL}/sheets/download-csv`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ folderId }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || error.error || "Failed to download CSV");
+    }
+
+    const csvContent = await response.text();
+    console.log("✅ CSV downloaded successfully");
+    
+    return csvContent;
+  } catch (error) {
+    console.error("❌ CSV download error:", error);
+    throw error;
+  }
 }

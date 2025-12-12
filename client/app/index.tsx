@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
 import { View, Text, TouchableOpacity, FlatList, Dimensions } from "react-native";
 import { useRouter } from "expo-router";
+import { loginAsGuest } from "@/services/auth";
 
 const { width } = Dimensions.get("window");
 
@@ -45,12 +46,19 @@ export default function Onboarding() {
         <Text className="text-[#259fc7] font-semibold">SKIP</Text>
       </TouchableOpacity>
 
-      {/* Login Option */}
+      {/* Demo Mode - Quick Access with AI */}
       <TouchableOpacity 
-        className="absolute top-16 left-6 z-10"
-        onPress={() => router.push("/paywall")}
+        className="absolute top-16 left-6 z-10 bg-[#259fc7] px-4 py-2 rounded-lg"
+        onPress={async () => {
+          try {
+            await loginAsGuest();
+            router.push("/(tabs)/camera");
+          } catch (error) {
+            console.error("Failed to start demo:", error);
+          }
+        }}
       >
-        <Text className="text-gray-600 font-semibold text-sm">Login</Text>
+        <Text className="text-white font-semibold text-sm">🚀 Demo Mode</Text>
       </TouchableOpacity>
 
       {/* Slides */}

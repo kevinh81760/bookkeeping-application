@@ -8,7 +8,7 @@ export async function createFolder(req, res) {
     const userId = req.user?.userId || "test-user";
 
     // Extract fields from request body
-    const { name, categories } = req.body;
+    const { name, categories, folderId } = req.body;
 
     // Validate folder name
     if (!name || typeof name !== "string" || !name.trim()) {
@@ -33,15 +33,17 @@ export async function createFolder(req, res) {
     // Extract column names from categories for AI processing
     const columns = categories.map(cat => cat.name.trim());
 
-    // Generate a unique folder ID
-    const folderId = uuidv4();
+    // Use provided folderId or generate new one (for backward compatibility)
+    const finalFolderId = folderId || uuidv4();
+    
+    console.log(`📁 Creating folder for user ${userId} with ID: ${finalFolderId}`);
 
     // Define parameters for DynamoDB
     const params = {
       TableName: process.env.DYNAMO_FOLDERS_TABLE,
       Item: {
         userId,                 // Partition key
-        folderId,               // Sort key
+        folderId: finalFolderId, // Sort key - use the final ID
         name: name.trim(),
         columns,                // Array of column names (derived from categories)
         categories,             // Array of category objects {name, type, required}
@@ -52,6 +54,7 @@ export async function createFolder(req, res) {
 
     // Save the folder to DynamoDB
     await db.send(new PutCommand(params));
+    console.log(`✅ Folder ${finalFolderId} saved to DynamoDB`);
 
     // Send success response
     res.json({

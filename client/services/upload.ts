@@ -45,6 +45,8 @@ export async function uploadReceipt({
     if (!token) {
       throw new Error("Not authenticated. Please login again.");
     }
+    
+    console.log(`📤 [Upload] Preparing upload for folder: ${folderId}`);
 
     // Create FormData for multipart upload
     const formData = new FormData();
@@ -62,7 +64,9 @@ export async function uploadReceipt({
     // Append metadata (userId comes from JWT token in Authorization header)
     formData.append("folderId", folderId);
 
-    console.log(`📤 Uploading receipt to ${BACKEND_URL}/upload/single`);
+    console.log(`📤 [Upload] Sending to ${BACKEND_URL}/upload/single`);
+    console.log(`📤 [Upload] Token (first 20 chars): ${token.substring(0, 20)}...`);
+    console.log(`📤 [Upload] FolderId: ${folderId}`);
 
     // Send to backend
     const response = await fetch(`${BACKEND_URL}/upload/single`, {
@@ -74,17 +78,20 @@ export async function uploadReceipt({
       body: formData,
     });
 
+    console.log(`📤 [Upload] Response status: ${response.status}`);
+
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.message || `Upload failed: ${response.status}`);
+      console.error(`❌ [Upload] Server error:`, error);
+      throw new Error(error.message || error.error || `Upload failed: ${response.status}`);
     }
 
     const data: UploadReceiptResponse = await response.json();
-    console.log("✅ Receipt uploaded successfully:", data);
+    console.log("✅ [Upload] Success:", data);
 
     return data;
   } catch (error) {
-    console.error("❌ Upload error:", error);
+    console.error("❌ [Upload] Error:", error);
     throw error;
   }
 }

@@ -10,10 +10,13 @@ import {
   Platform,
   Linking,
   Image,
+  Share,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as SecureStore from "expo-secure-store";
+import * as FileSystem from "expo-file-system/legacy";
+import * as Sharing from "expo-sharing";
 import {
   getLocalFolder,
   getReceiptsByFolder,
@@ -22,7 +25,7 @@ import {
   type LocalFolder,
   type LocalReceipt,
 } from "@/services/storage";
-import { exportFolderToSheets } from "@/services/export";
+import { exportFolderToSheets, downloadFolderAsCSV } from "@/services/export";
 
 export default function FolderDetailsScreen() {
   const router = useRouter();
@@ -153,6 +156,61 @@ export default function FolderDetailsScreen() {
         },
       ]
     );
+  };
+
+  const handleExportToCSV = async () => {
+    if (!folder) return;
+
+    if (receipts.length === 0) {
+      Alert.alert(
+        "No Receipts",
+        "This folder doesn't have any receipts yet. Add some receipts before exporting.",
+        [{ text: "OK" }]
+      );
+      return;
+    }
+
+    try {
+      setExporting(true);
+      
+      console.log("📥 Downloading CSV...");
+      const csvContent = await downloadFolderAsCSV(id);
+      
+      // Save CSV to file system
+      const fileName = `${folder.name.replace(/[^a-z0-9]/gi, '_')}_export_${Date.now()}.csv`;
+      const fileUri = `${FileSystem.documentDirectory}${fileName}`;
+      
+      await FileSystem.writeAsStringAsync(fileUri, csvContent, {
+        encoding: "utf8",
+      });
+      
+      console.log("✅ CSV saved to:", fileUri);
+      
+      // Share the file - this opens iOS share sheet with "Save to Files" option
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(fileUri, {
+          mimeType: 'text/csv',
+          dialogTitle: 'Export CSV',
+          UTI: 'public.comma-separated-values-text',
+        });
+        
+        console.log("✅ Share sheet opened - user can save to Files app");
+      } else {
+        // Fallback: try to use Share API
+        await Share.share({
+          url: fileUri,
+          title: 'Export CSV',
+        });
+        
+        Alert.alert("Success! 📊", "CSV file ready to save");
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+      console.error("❌ CSV export error:", errorMessage);
+      Alert.alert("Export Failed", errorMessage);
+    } finally {
+      setExporting(false);
+    }
   };
 
   const handleDeleteFolder = () => {
@@ -325,7 +383,7 @@ export default function FolderDetailsScreen() {
             className={`bg-[#259fc7] py-4 rounded-xl flex-row items-center justify-center ${
               exporting ? "opacity-60" : ""
             }`}
-            onPress={handleExportToSheets}
+            onPress={handleExportToCSV}
             disabled={exporting}
           >
             {exporting ? (
@@ -335,8 +393,8 @@ export default function FolderDetailsScreen() {
               </>
             ) : (
               <>
-                <Ionicons name="cloud-upload-outline" size={20} color="white" />
-                <Text className="text-base font-bold text-white ml-2">Export to Google Sheets</Text>
+                <Ionicons name="download-outline" size={20} color="white" />
+                <Text className="text-base font-bold text-white ml-2">Download CSV</Text>
               </>
             )}
           </TouchableOpacity>

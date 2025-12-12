@@ -82,13 +82,14 @@ export default function CreateFolderScreen() {
       console.log("💾 Saving folder:", folderData);
 
       // Save locally for offline support
-      await saveFolderLocally(folderData);
+      const localFolder = await saveFolderLocally(folderData);
+      console.log("💾 Local folder created with ID:", localFolder.id);
 
-      // Sync to backend
+      // Sync to backend with the SAME folderId
       try {
         const token = await SecureStore.getItemAsync("userToken");
         if (token) {
-          console.log("📤 Syncing folder to backend...");
+          console.log("📤 Syncing folder to backend with ID:", localFolder.id);
           const response = await fetch(`${BACKEND_URL}/folders/create`, {
             method: "POST",
             headers: {
@@ -96,6 +97,7 @@ export default function CreateFolderScreen() {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
+              folderId: localFolder.id,
               name: folderData.folderName,
               categories: folderData.categories,
             }),
