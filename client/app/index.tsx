@@ -31,26 +31,26 @@ export default function Onboarding() {
     if (index < slides.length - 1) {
       flatListRef.current?.scrollToIndex({ index: index + 1 });
     } else {
-      router.push("/paywall"); // opens modal
+      router.push("/(tabs)/camera"); // Go directly to app
     }
   };
 
   return (
     <View className="flex-1 bg-white">
-      {/* Skip */}
+      {/* Skip to App */}
       <TouchableOpacity 
         className="absolute top-16 right-6 z-10"
-        onPress={() => router.push("/paywall")}
+        onPress={() => router.push("/(tabs)/camera")}
       >
         <Text className="text-[#259fc7] font-semibold">SKIP</Text>
       </TouchableOpacity>
 
-      {/* 🧪 TEMPORARY: Test Camera Button - Remove in production */}
+      {/* Login Option */}
       <TouchableOpacity 
-        className="absolute top-16 left-6 z-10 bg-orange-500 px-3 py-2 rounded-lg"
-        onPress={() => router.push("/(tabs)/camera")}
+        className="absolute top-16 left-6 z-10"
+        onPress={() => router.push("/paywall")}
       >
-        <Text className="text-white font-semibold text-xs">🧪 TEST CAMERA</Text>
+        <Text className="text-gray-600 font-semibold text-sm">Login</Text>
       </TouchableOpacity>
 
       {/* Slides */}

@@ -53,7 +53,7 @@ export async function googleCallback(req, res) {
     const appJwt = jwt.sign(
       jwtPayload,
       process.env.JWT_SECRET,
-      { expiresIn: "1h" }
+      { expiresIn: "7d" } // 7 days for mobile app
     );
 
     console.log("✅ [Auth] JWT created successfully");

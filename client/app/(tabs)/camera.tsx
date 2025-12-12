@@ -5,12 +5,18 @@ import {
   TouchableOpacity,
   Alert,
   Platform,
+  Modal,
+  ScrollView,
 } from "react-native";
 import { CameraView, CameraType, FlashMode, useCameraPermissions } from "expo-camera";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import * as MediaLibrary from "expo-media-library";
-import { saveReceiptLocally } from "@/services/storage";
+import * as SecureStore from "expo-secure-store";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useIsFocused } from "@react-navigation/native";
+import { saveReceiptLocally, getLocalFolders, type LocalFolder } from "@/services/storage";
+import { uploadReceipt } from "@/services/upload";
 
 export default function CameraScreen() {
   // Camera state
@@ -19,12 +25,60 @@ export default function CameraScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
 
+  // Folder selection state
+  const [folders, setFolders] = useState<LocalFolder[]>([]);
+  const [selectedFolder, setSelectedFolder] = useState<LocalFolder | null>(null);
+  const [showFolderPicker, setShowFolderPicker] = useState(false);
+
+  // Check if screen is focused
+  const isFocused = useIsFocused();
+
   // Request camera permissions on mount
   useEffect(() => {
     if (permission && !permission.granted) {
       requestPermission();
     }
   }, [permission]);
+
+  // Reload folders when screen is focused
+  useEffect(() => {
+    if (isFocused) {
+      loadFolders();
+      debugStorage(); // TEMPORARY: Remove after debugging
+    }
+  }, [isFocused]);
+
+  // Load available folders
+  const loadFolders = async () => {
+    try {
+      console.log("🔄 [Camera] Loading folders...");
+      const folderList = await getLocalFolders();
+      console.log("📁 [Camera] Folders loaded:", folderList.length);
+      console.log("📁 [Camera] Folder details:", JSON.stringify(folderList, null, 2));
+      setFolders(folderList);
+    } catch (error) {
+      console.error("❌ [Camera] Error loading folders:", error);
+    }
+  };
+
+  // TEMPORARY: Debug function to check AsyncStorage directly
+  const debugStorage = async () => {
+    try {
+      console.log("🐛 [Debug] Checking AsyncStorage directly...");
+      const allKeys = await AsyncStorage.getAllKeys();
+      console.log("🐛 [Debug] All AsyncStorage keys:", allKeys);
+      
+      const foldersData = await AsyncStorage.getItem("@folders");
+      console.log("🐛 [Debug] @folders data:", foldersData);
+      
+      if (foldersData) {
+        const parsed = JSON.parse(foldersData);
+        console.log("🐛 [Debug] Parsed folders:", parsed);
+      }
+    } catch (error) {
+      console.error("🐛 [Debug] Error:", error);
+    }
+  };
 
   // Handle permission states
   if (!permission) {
@@ -83,17 +137,46 @@ export default function CameraScreen() {
           await MediaLibrary.createAssetAsync(photo.uri);
         }
 
-        // 🧪 TESTING: Save locally so you can see it in Files tab
-        await saveReceiptLocally(photo.uri);
+        // Save locally for offline support
+        await saveReceiptLocally(photo.uri, selectedFolder?.id);
 
-        Alert.alert(
-          "Success! 📸",
-          "Receipt saved!\n\n• Go to Files tab to see it\n• View full testing without backend",
-          [{ text: "OK" }]
-        );
-
-        // TODO: Upload to server when backend is ready
-        // await uploadReceipt({ imageUri: photo.uri, folderId: "xxx" });
+        // Upload to server for AI processing (only if logged in)
+        const token = await SecureStore.getItemAsync("userToken");
+        if (selectedFolder?.id && token) {
+          try {
+            console.log("📤 Uploading receipt to server for AI processing...");
+            const result = await uploadReceipt({
+              imageUri: photo.uri,
+              folderId: selectedFolder.id,
+            });
+            console.log("✅ Receipt uploaded and processed:", result);
+            
+            const folderInfo = selectedFolder ? `to "${selectedFolder.name}"` : "as uncategorized";
+            Alert.alert(
+              "Success! 📸",
+              `Receipt saved ${folderInfo} and processed with AI!\n\n• Go to Files tab to see it`,
+              [{ text: "OK" }]
+            );
+          } catch (error) {
+            console.error("❌ Upload failed:", error);
+            // Still saved locally, show partial success
+            const folderInfo = selectedFolder ? `to "${selectedFolder.name}"` : "as uncategorized";
+            Alert.alert(
+              "Saved Locally 📸",
+              `Receipt saved ${folderInfo} on device.\n\nCloud sync failed - will retry later.`,
+              [{ text: "OK" }]
+            );
+          }
+        } else {
+          // No token or no folder - just show local save success
+          const folderInfo = selectedFolder ? `to "${selectedFolder.name}"` : "as uncategorized";
+          const loginHint = !token && selectedFolder?.id ? "\n• Log in for AI extraction" : "";
+          Alert.alert(
+            "Success! 📸",
+            `Receipt saved ${folderInfo}!\n\n• Go to Files tab to see it${loginHint}`,
+            [{ text: "OK" }]
+          );
+        }
       }
     } catch (error) {
       console.error("❌ Error capturing photo:", error);
@@ -116,22 +199,48 @@ export default function CameraScreen() {
         const selectedCount = result.assets.length;
         console.log(`📁 ${selectedCount} image(s) selected from gallery`);
 
-        // Save all selected images locally
+        let uploadedCount = 0;
+        let failedCount = 0;
+
+        // Check if logged in for AI processing
+        const token = await SecureStore.getItemAsync("userToken");
+
+        // Save all selected images locally and upload to server if logged in
         for (const asset of result.assets) {
           console.log("💾 Saving:", asset.uri);
-          await saveReceiptLocally(asset.uri);
+          await saveReceiptLocally(asset.uri, selectedFolder?.id);
+
+          // Upload to server if folder is selected AND user is logged in
+          if (selectedFolder?.id && token) {
+            try {
+              console.log("📤 Uploading to server:", asset.uri);
+              await uploadReceipt({
+                imageUri: asset.uri,
+                folderId: selectedFolder.id,
+              });
+              uploadedCount++;
+            } catch (error) {
+              console.error("❌ Upload failed for:", asset.uri, error);
+              failedCount++;
+            }
+          }
         }
 
+        const folderInfo = selectedFolder ? `to "${selectedFolder.name}"` : "as uncategorized";
+        let uploadInfo = '';
+        if (selectedFolder?.id && token) {
+          uploadInfo = `\n\n• Uploaded: ${uploadedCount}\n• Failed: ${failedCount}\n• Saved locally: ${selectedCount}`;
+        } else if (selectedFolder?.id && !token) {
+          uploadInfo = '\n\n• Saved locally\n• Log in for AI extraction';
+        } else {
+          uploadInfo = '\n\n• Go to Files tab to see them';
+        }
+          
         Alert.alert(
           "Success! 📁",
-          `${selectedCount} photo${selectedCount > 1 ? 's' : ''} saved!\n\n• Go to Files tab to see them\n• Upload functionality coming soon`,
+          `${selectedCount} photo${selectedCount > 1 ? 's' : ''} saved ${folderInfo}!${uploadInfo}`,
           [{ text: "OK" }]
         );
-
-        // TODO: Upload all to server when backend is ready
-        // for (const asset of result.assets) {
-        //   await uploadReceipt({ imageUri: asset.uri, folderId: "xxx" });
-        // }
       }
     } catch (error) {
       console.error("❌ Error opening gallery:", error);
@@ -160,9 +269,22 @@ export default function CameraScreen() {
           flash={flash}
           mode="picture"
         >
-          {/* Top Bar - Flash Toggle */}
+          {/* Top Bar - Folder Selection & Flash */}
           <View className={`flex-row justify-between items-center ${Platform.OS === "ios" ? "pt-[50px]" : "pt-4"} px-5`}>
-            <View className="w-12" />
+            {/* Folder Selection Button */}
+            <TouchableOpacity
+              className="flex-1 mr-2 bg-gray-800/80 rounded-full px-4 py-3 flex-row items-center justify-center"
+              onPress={() => setShowFolderPicker(true)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="folder" size={18} color="#259fc7" />
+              <Text className="text-sm font-semibold text-gray-50 ml-2" numberOfLines={1}>
+                {selectedFolder ? selectedFolder.name : "Uncategorized"}
+              </Text>
+              <Ionicons name="chevron-down" size={16} color="#9CA3AF" style={{ marginLeft: 4 }} />
+            </TouchableOpacity>
+
+            {/* Flash Toggle */}
             <TouchableOpacity
               className="w-12 h-12 rounded-full bg-gray-800/80 justify-center items-center"
               onPress={toggleFlash}
@@ -215,6 +337,111 @@ export default function CameraScreen() {
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Folder Picker Modal */}
+      <Modal
+        visible={showFolderPicker}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowFolderPicker(false)}
+      >
+        <View className="flex-1 bg-black/50">
+          <TouchableOpacity 
+            className="flex-1" 
+            activeOpacity={1}
+            onPress={() => setShowFolderPicker(false)}
+          />
+          
+          <View className="bg-white rounded-t-3xl" style={{ 
+            maxHeight: '70%', 
+            minHeight: 400,
+            paddingBottom: Platform.OS === "ios" ? 34 : 20 
+          }}>
+            {/* Header */}
+            <View className="flex-row items-center justify-between px-6 pt-6 pb-4 border-b border-gray-200">
+              <Text className="text-xl font-bold text-gray-900">Select Folder</Text>
+              <TouchableOpacity onPress={() => setShowFolderPicker(false)}>
+                <Ionicons name="close" size={28} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Folder List */}
+            <ScrollView 
+              className="flex-1" 
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ flexGrow: 1 }}
+              style={{ maxHeight: 500 }}
+            >
+              {/* Uncategorized Option */}
+              <TouchableOpacity
+                className={`flex-row items-center px-6 py-4 border-b border-gray-100 ${
+                  !selectedFolder ? "bg-[#259fc7]/5" : "bg-white"
+                }`}
+                onPress={() => {
+                  setSelectedFolder(null);
+                  setShowFolderPicker(false);
+                }}
+              >
+                <View className="w-12 h-12 rounded-xl bg-gray-100 items-center justify-center">
+                  <Ionicons name="file-tray-outline" size={24} color="#6B7280" />
+                </View>
+                <View className="flex-1 ml-4">
+                  <Text className="text-base font-semibold text-gray-900">
+                    Uncategorized
+                  </Text>
+                  <Text className="text-sm text-gray-500 mt-0.5">
+                    Save without assigning to a folder
+                  </Text>
+                </View>
+                {!selectedFolder && (
+                  <Ionicons name="checkmark-circle" size={24} color="#259fc7" />
+                )}
+              </TouchableOpacity>
+
+              {/* Existing Folders */}
+              {folders.map((folder) => (
+                <TouchableOpacity
+                  key={folder.id}
+                  className={`flex-row items-center px-6 py-4 border-b border-gray-100 ${
+                    selectedFolder?.id === folder.id ? "bg-[#259fc7]/5" : "bg-white"
+                  }`}
+                  onPress={() => {
+                    setSelectedFolder(folder);
+                    setShowFolderPicker(false);
+                  }}
+                >
+                  <View className="w-12 h-12 rounded-xl bg-[#259fc7]/10 items-center justify-center">
+                    <Ionicons name="folder" size={24} color="#259fc7" />
+                  </View>
+                  <View className="flex-1 ml-4">
+                    <Text className="text-base font-semibold text-gray-900">
+                      {folder.name}
+                    </Text>
+                    {folder.description ? (
+                      <Text className="text-sm text-gray-500 mt-0.5" numberOfLines={1}>
+                        {folder.description}
+                      </Text>
+                    ) : null}
+                  </View>
+                  {selectedFolder?.id === folder.id && (
+                    <Ionicons name="checkmark-circle" size={24} color="#259fc7" />
+                  )}
+                </TouchableOpacity>
+              ))}
+
+              {/* Empty State */}
+              {folders.length === 0 && (
+                <View className="items-center justify-center py-12 px-6">
+                  <Ionicons name="folder-open-outline" size={48} color="#D1D5DB" />
+                  <Text className="text-base text-gray-500 mt-4 text-center">
+                    No folders yet. Create one in the Files tab.
+                  </Text>
+                </View>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }

@@ -7,6 +7,7 @@ import uploadRoutes from "./01-routes/uploadRoutes.js";
 import foldersRoutes from "./01-routes/foldersRoutes.js";
 import sheetRoutes from "./01-routes/sheetRoutes.js";
 import { authMiddleware } from "./04-middleware/authMiddleware.js";
+import { errorHandler } from "./04-middleware/errorHandler.js";
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -27,7 +28,10 @@ app.get("/", (req, res) => {
   res.send("Server is running");
 });
 
-// Step 4: Start server
+// Step 4: Error handler middleware (must be last)
+app.use(errorHandler);
+
+// Step 5: Start server
 app.listen(PORT, '0.0.0.0',() => {
   console.log(`http://localhost:${PORT}`);
 });

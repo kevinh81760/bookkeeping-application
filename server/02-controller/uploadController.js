@@ -5,15 +5,16 @@ import { analyzeReceipt } from "../03-services/openai.js";
 export async function uploadSingle(req, res) {
   try {
     const file = req.file;
-    const { userId, folderId } = req.body;
+    const userId = req.user?.userId || "test-user";
+    const { folderId } = req.body;
 
     // Validate file input
     if (!file) {
       return res.status(400).json({ error: "No file uploaded" });
     }
 
-    if (!userId || !folderId) {
-      return res.status(400).json({ error: "Missing userId or folderId in request" });
+    if (!folderId) {
+      return res.status(400).json({ error: "Missing folderId in request" });
     }
 
     // Upload file to S3

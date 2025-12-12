@@ -1,5 +1,5 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, PutCommand, GetCommand, DeleteCommand, QueryCommand, ScanCommand } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient, PutCommand, GetCommand, DeleteCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
 import dotenv from "dotenv";
 dotenv.config();
 import { randomUUID } from "crypto";
@@ -77,9 +77,19 @@ export async function getFolderColumns(folderId, userId) {
 
   if (!result.Item) return null;
 
+  // Extract column names from categories array
+  // categories is now an array of objects: [{name, type, required}, ...]
+  const categoriesArray = result.Item.categories || [];
+  const columns = result.Item.columns || categoriesArray.map(cat => cat.name);
+
+  // For AI classification categories, we'll use an empty array for now
+  // In the future, users could define separate classification categories
+  // (e.g., "Food", "Travel", "Office Supplies")
+  const classificationCategories = [];
+
   return {
-    columns: result.Item.columns || [],
-    categories: result.Item.categories || [],
+    columns,
+    categories: classificationCategories,
   };
 }
 
@@ -106,19 +116,22 @@ export async function saveReceipt(userId, folderId, fileName, s3Path, receiptDat
 
 
 export async function getReceiptsByFolder(userId, folderId) {
-  // Use ScanCommand with filter since we don't have a GSI on folderId
-  // In production, you should create a GSI for better performance
+  // Query all receipts for the user (efficient with PK=userId)
+  // Then filter by folderId in application code
   const params = {
     TableName: process.env.DYNAMO_RECEIPTS_TABLE,
-    FilterExpression: "userId = :userId AND folderId = :folderId",
+    KeyConditionExpression: "userId = :userId",
     ExpressionAttributeValues: {
       ":userId": userId,
-      ":folderId": folderId,
     },
   };
 
-  const result = await db.send(new ScanCommand(params));
-  return result.Items || [];
+  const result = await db.send(new QueryCommand(params));
+  const allReceipts = result.Items || [];
+  
+  // Filter by folderId in application code
+  // Note: For production with many receipts, consider creating a GSI on folderId
+  return allReceipts.filter(receipt => receipt.folderId === folderId);
 }
 
 

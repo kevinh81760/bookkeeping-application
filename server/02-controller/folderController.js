@@ -8,26 +8,30 @@ export async function createFolder(req, res) {
     const userId = req.user?.userId || "test-user";
 
     // Extract fields from request body
-    const { name, columns, categories } = req.body;
+    const { name, categories } = req.body;
 
     // Validate folder name
     if (!name || typeof name !== "string" || !name.trim()) {
       return res.status(400).json({ error: "Folder name is required" });
     }
 
-    // Validate columns array
-    if (!Array.isArray(columns) || columns.length === 0) {
-      return res.status(400).json({ error: "Columns must be a non-empty array of strings" });
-    }
-
-    // Validate categories array
+    // Validate categories array (now expects objects with name, type, required)
     if (!Array.isArray(categories) || categories.length === 0) {
-      return res.status(400).json({ error: "Categories must be a non-empty array of strings" });
+      return res.status(400).json({ error: "Categories must be a non-empty array" });
     }
 
-    // Clean up input data (remove extra spaces)
-    const cleanColumns = columns.map(c => c.trim());
-    const cleanCategories = categories.map(c => c.trim());
+    // Validate category structure
+    for (const cat of categories) {
+      if (!cat.name || typeof cat.name !== "string") {
+        return res.status(400).json({ error: "Each category must have a name" });
+      }
+      if (!cat.type || !["Text", "Number", "Date"].includes(cat.type)) {
+        return res.status(400).json({ error: "Each category must have a valid type (Text, Number, or Date)" });
+      }
+    }
+
+    // Extract column names from categories for AI processing
+    const columns = categories.map(cat => cat.name.trim());
 
     // Generate a unique folder ID
     const folderId = uuidv4();
@@ -39,8 +43,8 @@ export async function createFolder(req, res) {
         userId,                 // Partition key
         folderId,               // Sort key
         name: name.trim(),
-        columns: cleanColumns,  // Array of strings
-        categories: cleanCategories, // Array of strings
+        columns,                // Array of column names (derived from categories)
+        categories,             // Array of category objects {name, type, required}
         createdAt: new Date().toISOString(),
       },
       ConditionExpression: "attribute_not_exists(folderId)", // Prevents overwriting an existing folder

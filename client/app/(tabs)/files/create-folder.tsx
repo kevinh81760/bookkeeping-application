@@ -10,7 +10,9 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import * as SecureStore from "expo-secure-store";
 import { saveFolderLocally } from "@/services/storage";
+import { BACKEND_URL } from "@/config/api";
 
 interface Category {
   id: string;
@@ -79,18 +81,54 @@ export default function CreateFolderScreen() {
 
       console.log("💾 Saving folder:", folderData);
 
-      // Save locally
+      // Save locally for offline support
       await saveFolderLocally(folderData);
 
-      Alert.alert("Success! 🎉", "Folder created successfully.", [
-        {
-          text: "OK",
-          onPress: () => router.back(),
-        },
-      ]);
+      // Sync to backend
+      try {
+        const token = await SecureStore.getItemAsync("userToken");
+        if (token) {
+          console.log("📤 Syncing folder to backend...");
+          const response = await fetch(`${BACKEND_URL}/folders/create`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              name: folderData.folderName,
+              categories: folderData.categories,
+            }),
+          });
 
-      // TODO: Call backend API
-      // await createFolder(folderData);
+          if (response.ok) {
+            const result = await response.json();
+            console.log("✅ Folder synced to backend:", result);
+          } else {
+            const error = await response.json();
+            console.warn("⚠️ Backend sync failed:", error);
+          }
+        } else {
+          console.log("ℹ️ No auth token, folder saved locally only");
+        }
+      } catch (error) {
+        console.warn("⚠️ Failed to sync folder to backend:", error);
+        // Folder still exists locally, continue
+      }
+
+      Alert.alert(
+        "Success! 🎉",
+        `"${folderData.folderName}" created successfully.\n\nYou can now assign receipts to this folder from the camera screen.`,
+        [
+          {
+            text: "View Folder",
+            onPress: async () => {
+              // Navigate back first, then the new folder should appear in the list
+              router.back();
+            },
+          },
+        ]
+      );
     } catch (error) {
       console.error("Error saving folder:", error);
       Alert.alert("Error", "Failed to create folder. Please try again.");

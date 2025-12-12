@@ -11,6 +11,7 @@ import { useRouter, Stack } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import * as Linking from "expo-linking";
 import * as SecureStore from "expo-secure-store";
+import { BACKEND_URL } from "../../config/api";
 
 // Tell WebBrowser to handle OAuth session properly
 WebBrowser.maybeCompleteAuthSession();
@@ -19,11 +20,10 @@ export default function Paywall() {
   const [reminder, setReminder] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const BACKEND_URL = "http://localhost:4000";
 
   // 🧪 TEST: Check if backend is reachable
   useEffect(() => {
-    fetch('http://localhost:4000/')
+    fetch(`${BACKEND_URL}/`)
       .then(res => res.text())
       .then(text => console.log('✅ Backend reachable:', text))
       .catch(err => console.error('❌ Cannot reach backend:', err));

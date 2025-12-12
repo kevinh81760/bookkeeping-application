@@ -108,25 +108,47 @@ export default function ProfileScreen() {
       </View>
 
       <View className="flex-1 px-6">
-        {/* Profile Picture */}
-        <View className="items-center py-8 border-b border-gray-700">
-          {userData?.picture ? (
-            <Image 
-              source={{ uri: userData.picture }}
-              className="w-[100px] h-[100px] rounded-full mb-4"
-            />
-          ) : (
+        {/* Profile Picture / Login Prompt */}
+        {!userData && !loading ? (
+          // Not logged in - show login option
+          <View className="items-center py-8 border-b border-gray-700">
             <View className="w-[100px] h-[100px] rounded-full bg-gray-800 justify-center items-center mb-4">
               <Ionicons name="person" size={48} color="#9CA3AF" />
             </View>
-          )}
-          <Text className="text-2xl font-bold text-gray-50 mb-1">
-            {loading ? "Loading..." : userData?.name || "User"}
-          </Text>
-          <Text className="text-base text-gray-400">
-            {loading ? "" : userData?.email || ""}
-          </Text>
-        </View>
+            <Text className="text-2xl font-bold text-gray-50 mb-2">
+              Not Logged In
+            </Text>
+            <Text className="text-base text-gray-400 text-center mb-6 px-4">
+              Log in to unlock AI receipt processing and cloud sync
+            </Text>
+            <TouchableOpacity
+              className="bg-[#259fc7] py-3 px-6 rounded-xl active:opacity-80"
+              onPress={() => router.push("/paywall")}
+            >
+              <Text className="text-base font-semibold text-gray-50">Log In with Google</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          // Logged in - show profile
+          <View className="items-center py-8 border-b border-gray-700">
+            {userData?.picture ? (
+              <Image 
+                source={{ uri: userData.picture }}
+                className="w-[100px] h-[100px] rounded-full mb-4"
+              />
+            ) : (
+              <View className="w-[100px] h-[100px] rounded-full bg-gray-800 justify-center items-center mb-4">
+                <Ionicons name="person" size={48} color="#9CA3AF" />
+              </View>
+            )}
+            <Text className="text-2xl font-bold text-gray-50 mb-1">
+              {loading ? "Loading..." : userData?.name || "User"}
+            </Text>
+            <Text className="text-base text-gray-400">
+              {loading ? "" : userData?.email || ""}
+            </Text>
+          </View>
+        )}
 
         {/* Settings */}
         <View className="mt-8">
@@ -157,11 +179,13 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Logout */}
-        <TouchableOpacity className="flex-row items-center justify-center mt-8 py-4 rounded-xl bg-gray-800" onPress={handleLogout}>
-          <Ionicons name="log-out-outline" size={24} color="#EF4444" />
-          <Text className="text-base font-semibold text-red-500 ml-3">Logout</Text>
-        </TouchableOpacity>
+        {/* Logout - Only show if logged in */}
+        {userData && (
+          <TouchableOpacity className="flex-row items-center justify-center mt-8 py-4 rounded-xl bg-gray-800" onPress={handleLogout}>
+            <Ionicons name="log-out-outline" size={24} color="#EF4444" />
+            <Text className="text-base font-semibold text-red-500 ml-3">Logout</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );

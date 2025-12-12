@@ -26,7 +26,9 @@ export default function FilesScreen() {
       setLoading(true);
       
       // 1. Sync folders from backend (this merges backend + local)
-      await syncUserData();
+      console.log("🔄 [Files] Starting sync...");
+      const syncResult = await syncUserData();
+      console.log("🔄 [Files] Sync completed. Success:", syncResult.success, "Folders:", syncResult.folders.length);
       
       // 2. Load synced data from local storage
       const [receiptsData, foldersData] = await Promise.all([
@@ -135,7 +137,8 @@ export default function FilesScreen() {
           {/* Text */}
           <Text className="text-[28px] font-bold text-gray-900 mb-3">NO FOLDERS YET</Text>
           <Text className="text-base text-gray-500 text-center mb-10 leading-6">
-            Create a folder or import receipts to{"\n"}get started.
+            Create a folder to organize your receipts.{"\n"}
+            Then export them to Google Sheets!
           </Text>
 
           {/* Create Folder Button */}
@@ -158,9 +161,20 @@ export default function FilesScreen() {
         <View className="flex-row items-center justify-between">
           <View>
             <Text className="text-[32px] font-bold text-gray-900">My Files</Text>
-            <Text className="text-base text-gray-500 mt-1">
-              {folders.length} folder{folders.length === 1 ? '' : 's'} · {receipts.length} receipt{receipts.length === 1 ? '' : 's'}
-            </Text>
+            <View className="flex-row items-center mt-2">
+              <View className="flex-row items-center mr-4">
+                <View className="w-2 h-2 rounded-full bg-[#259fc7] mr-2" />
+                <Text className="text-base text-gray-600">
+                  {folders.length} folder{folders.length === 1 ? '' : 's'}
+                </Text>
+              </View>
+              <View className="flex-row items-center">
+                <View className="w-2 h-2 rounded-full bg-gray-400 mr-2" />
+                <Text className="text-base text-gray-600">
+                  {receipts.length} receipt{receipts.length === 1 ? '' : 's'}
+                </Text>
+              </View>
+            </View>
           </View>
           {/* Create Folder FAB */}
           <TouchableOpacity
@@ -189,47 +203,67 @@ export default function FilesScreen() {
           <Text className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
             📁 FOLDERS
           </Text>
-          {folders.map((folder) => (
-            <TouchableOpacity
-              key={folder.id}
-              className="bg-white rounded-2xl p-5 mb-3 active:opacity-80"
-              style={{
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.05,
-                shadowRadius: 8,
-                elevation: 2,
-              }}
-            >
-              <View className="flex-row items-center mb-2">
-                <View className="w-12 h-12 rounded-xl bg-[#259fc7]/10 items-center justify-center">
-                  <Ionicons name="folder" size={24} color="#259fc7" />
+          {folders.map((folder) => {
+            // Count receipts in this folder
+            const folderReceiptCount = receipts.filter(r => r.folderId === folder.id).length;
+            
+            return (
+              <TouchableOpacity
+                key={folder.id}
+                className="bg-white rounded-2xl p-5 mb-3 active:opacity-80"
+                style={{
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.05,
+                  shadowRadius: 8,
+                  elevation: 2,
+                }}
+                onPress={() => router.push(`/(tabs)/files/${folder.id}`)}
+              >
+                <View className="flex-row items-center mb-2">
+                  <View className="w-12 h-12 rounded-xl bg-[#259fc7]/10 items-center justify-center relative">
+                    <Ionicons name="folder" size={24} color="#259fc7" />
+                    {folderReceiptCount > 0 && (
+                      <View className="absolute -top-1 -right-1 bg-[#E05C35] rounded-full min-w-[20px] h-5 items-center justify-center px-1.5">
+                        <Text className="text-xs font-bold text-white">
+                          {folderReceiptCount > 99 ? '99+' : folderReceiptCount}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                  <View className="flex-1 ml-4">
+                    <Text className="text-lg font-semibold text-gray-900 mb-1">
+                      {folder.name}
+                    </Text>
+                    <View className="flex-row items-center">
+                      <Text className="text-sm text-gray-500">
+                        {folderReceiptCount} item{folderReceiptCount === 1 ? '' : 's'}
+                      </Text>
+                      <View className="w-1 h-1 rounded-full bg-gray-300 mx-2" />
+                      <Text className="text-sm text-gray-500">
+                        {formatRelativeTime(folder.timestamp)}
+                      </Text>
+                    </View>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
                 </View>
-                <View className="flex-1 ml-4">
-                  <Text className="text-lg font-semibold text-gray-900 mb-1">
-                    {folder.name}
+                {folder.description ? (
+                  <Text className="text-sm text-gray-600 mt-2" numberOfLines={2}>
+                    {folder.description}
                   </Text>
-                  <Text className="text-sm text-gray-500">
-                    0 items • {formatRelativeTime(folder.timestamp)}
-                  </Text>
-                </View>
-              </View>
-              {folder.description ? (
-                <Text className="text-sm text-gray-600 mt-2" numberOfLines={2}>
-                  {folder.description}
-                </Text>
-              ) : null}
-            </TouchableOpacity>
-          ))}
+                ) : null}
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
         {/* Uncategorized Receipts */}
-        {receipts.length > 0 && (
+        {receipts.filter(r => !r.folderId).length > 0 && (
           <View className="mt-6 mb-6">
             <Text className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
               📄 UNCATEGORIZED
             </Text>
-            {receipts.map((receipt) => (
+            {receipts.filter(r => !r.folderId).map((receipt) => (
               <View key={receipt.id} className="flex-row bg-white rounded-2xl p-3 mb-3 items-center" style={{
                 shadowColor: "#000",
                 shadowOffset: { width: 0, height: 2 },

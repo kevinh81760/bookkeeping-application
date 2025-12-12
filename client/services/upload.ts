@@ -46,12 +46,6 @@ export async function uploadReceipt({
       throw new Error("Not authenticated. Please login again.");
     }
 
-    // Get user ID (assuming it's stored during login)
-    const userId = await SecureStore.getItemAsync("userId");
-    if (!userId) {
-      throw new Error("User ID not found. Please login again.");
-    }
-
     // Create FormData for multipart upload
     const formData = new FormData();
 
@@ -65,8 +59,7 @@ export async function uploadReceipt({
       type: "image/jpeg", // Adjust based on actual file type
     } as any);
 
-    // Append metadata
-    formData.append("userId", userId);
+    // Append metadata (userId comes from JWT token in Authorization header)
     formData.append("folderId", folderId);
 
     console.log(`📤 Uploading receipt to ${BACKEND_URL}/upload/single`);

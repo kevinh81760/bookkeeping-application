@@ -10,7 +10,7 @@ export async function fetchFoldersFromBackend(): Promise<LocalFolder[]> {
     try {
         const token = await SecureStore.getItemAsync("userToken");
         if (!token) {
-            console.log("⚠️ No auth token found, skipping backend sync");
+            console.log("ℹ️ Not logged in, skipping backend folder sync");
             return [];
         }
         
